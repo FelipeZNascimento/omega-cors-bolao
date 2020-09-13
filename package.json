@@ -1,0 +1,29 @@
+{
+  "requires": true,
+  "lockfileVersion": 1,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.16.3",
+    "mysql": "^2.18.1",
+    "request": "^2.88.0"
+  },
+  "name": "OmegaCors",
+  "version": "1.0.0",
+  "main": "server.js",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sharpion/omega-cors.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Sharpion/omega-cors/issues"
+  },
+  "homepage": "https://github.com/Sharpion/omega-cors#readme",
+  "description": ""
+}
