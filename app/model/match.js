@@ -1,6 +1,5 @@
 var sql = require('../../sql/sql');
 
-//Task object constructor
 var Match = function (match) {
     this.match = match.match;
     this.id = match.id;

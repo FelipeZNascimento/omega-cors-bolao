@@ -1,6 +1,5 @@
 var sql = require('../../sql/sql');
 
-//Task object constructor
 var Ranking = function (ranking) {
     this.ranking = ranking.ranking;
 };
