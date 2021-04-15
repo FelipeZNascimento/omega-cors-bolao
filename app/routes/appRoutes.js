@@ -1,10 +1,15 @@
 'use strict';
 module.exports = function (app) {
     const cookiesController = require('../controller/cookies');
+    const configController = require('../controller/config');
     const matchController = require('../controller/match');
     const rankingController = require('../controller/ranking');
     const teamController = require('../controller/team');
     const userController = require('../controller/user');
+
+    // Matches Routing
+    app.route('/bolaonfl/defaultConfig/')
+        .get(configController.default)
 
     // Matches Routing
     app.route('/bolaonfl/matches/update/:season/:key/')
