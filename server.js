@@ -34,6 +34,8 @@ const sessionInfo = {
 app.use(session(sessionInfo));
 app.listen(port);
 
+console.log('que porra');
+console.log('Config da porta: ' + JSON.stringify(SQLConfig.returnConfig(port)));
 console.log('API server started on: ' + port);
 
 var routes = require('./app/routes/appRoutes'); //importing route
