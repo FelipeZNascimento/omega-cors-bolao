@@ -1,6 +1,5 @@
 const express = require('express'),
     app = express(),
-    bodyParser = require('body-parser'),
     cors = require('cors'),
     port = process.env.PORT || 8081,
     session = require('express-session'),
@@ -13,8 +12,8 @@ var sessionStore = new MySQLStore(SQLConfig.returnConfig(port));
 
 app.options('*', cors());
 app.use(cors());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 const sessionSecret = process.env.SESSION_SECRET;
 const twentyEightDays = 28 * 24 * 60 * 60 * 1000;
@@ -36,9 +35,6 @@ app.use(session(sessionInfo));
 app.listen(port);
 
 console.log('API server started on: ' + port);
-
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
 
 var routes = require('./app/routes/appRoutes'); //importing route
 routes(app); //register the route

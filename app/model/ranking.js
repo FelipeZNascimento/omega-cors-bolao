@@ -1,4 +1,5 @@
 var sql = require('../../sql/sql');
+var User = require('./user');
 
 var Ranking = function (ranking) {
     this.ranking = ranking.ranking;
@@ -53,5 +54,6 @@ const returnPoints = (match, bet) => {
 };
 
 Ranking.bySeason = function(season, result) {
-    
-}
+};
+
+module.exports = Ranking;

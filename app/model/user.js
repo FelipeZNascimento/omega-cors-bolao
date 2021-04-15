@@ -30,6 +30,26 @@ User.getAll = function (result) {
         });
 };
 
+User.getBySeason = function (season, result) {
+    sql.query(
+        `SELECT SQL_NO_CACHE users.id, users.login, users.name, users.full_name,
+        users_icon.icon, users_icon.color,
+        users_season.id AS season_id
+        FROM users
+        INNER JOIN users_season ON users.id = users_season.id_user AND users_season.id_season = ?
+        LEFT JOIN users_icon ON users.id = users_icon.id_user`,
+        [season],
+        function (err, res) {
+            if (err) {
+                console.log("error: ", err);
+                result(err, null);
+            }
+            else {
+                result(null, res);
+            }
+        });
+};
+
 User.getById = function (id, result) {
     sql.query(
         `SELECT SQL_NO_CACHE users.id, users.login, users.name, users.full_name,
@@ -46,7 +66,59 @@ User.getById = function (id, result) {
             else {
                 result(null, res);
             }
-        });
+        }
+    );
+};
+  
+function setIcons(id, icon, color) {
+    sql.query(
+        `INSERT INTO users_icon (id_user, icon, color) VALUES (?, ?, ?)`,
+        [id, icon, color],
+        function (err, res) {
+            if (err) {
+                console.log("error: ", err);
+                return false;
+            }
+            else {
+                console.log(res);
+                return true;
+            }
+        }
+    );
+};
+
+function setOnCurrentSeason(season, id) {
+    sql.query(
+        `INSERT INTO users_season (id_user, id_season) VALUES (?, ?)`,
+        [id, season],
+        function (err, res) {
+            if (err) {
+                console.log("error: ", err);
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+    );
+};
+
+User.register = async function (season, userData, result) {
+    sql.query(
+        `INSERT INTO users (login, password, name) VALUES (?, ?, ?)`,
+        [userData.login, userData.password, userData.name],
+        function (err, res) {
+            if (err) {
+                console.log("error: ", err);
+                result(err, null);
+            }
+            else {
+                setOnCurrentSeason(season, res.insertId);
+                setIcons(res.insertId, userData.icon, userData.color);
+                result(null, res);
+            }
+        }
+    );
 };
 
 User.login = function (season, userData, result) {

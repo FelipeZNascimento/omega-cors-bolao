@@ -28,17 +28,47 @@ exports.listById = function (req, res) {
     );
 };
 
-exports.login = function (req, res) {
-    const { login, password, cookies, id } = req.query;
+exports.register = function (req, res) {
     const season = process.env.SEASON;
-    const user = req.session.user;
+    const userData = new User(req.query);
 
-    const userData = new User({
-        cookies: cookies,
-        id: id,
-        login: login,
-        password: password
-    });
+    if (!userData.login || !userData.password || !userData.name) {
+        return res.status(400).send('Missing parameters.');
+    } else {
+        User.register(
+            season,
+            userData,
+            function (err, data) {
+                if (err) {
+                    res.status(400).send(err);
+                } else {
+                    User.login(
+                        season,
+                        userData,
+                        function (err, data) {
+                            if (err) {
+                                res.status(400).send(err);
+                            } else {
+                                if (data.length > 0) {
+                                    req.session.user = new User(data[0]);
+                                }
+                                res.send(data);
+                            }
+                        }
+                    );
+                }
+            }
+        );
+    }
+};
+
+exports.login = function (req, res) {
+    if (req.session.user) {
+        return res.status(400).send('User already logged in.');
+    };
+
+    const season = process.env.SEASON;
+    const userData = new User(req.query);
 
     if (userData.login && userData.password) {
         User.login(
@@ -87,12 +117,11 @@ exports.login = function (req, res) {
 };
 
 exports.logout = function (req, res) {
-    const session = req.session;
-    const { cookie, id } = req.session.user;
-
-    if (!session.user) {
+    if (!req.session.user) {
         return res.status(400).send('Logout: User not found.');
     }
+
+    const { cookie, id } = req.session.user;
 
     Cookies.delete(
         id,
@@ -101,7 +130,7 @@ exports.logout = function (req, res) {
             if (err) {
                 res.status(400).send(err);
             } else {
-                session.destroy();
+                req.session.destroy();
                 res.send(data);
             }
         }

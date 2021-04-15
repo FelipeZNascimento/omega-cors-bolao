@@ -21,7 +21,8 @@ Team.getAll = function (result) {
             else {
                 result(null, res);
             }
-        });
+        }
+    );
 };
 
 module.exports = Team;

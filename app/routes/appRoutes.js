@@ -2,6 +2,7 @@
 module.exports = function (app) {
     const cookiesController = require('../controller/cookies');
     const matchController = require('../controller/match');
+    const rankingController = require('../controller/ranking');
     const teamController = require('../controller/team');
     const userController = require('../controller/user');
 
@@ -28,6 +29,9 @@ module.exports = function (app) {
     app.route('/bolaonfl/user/:id/')
         .get(userController.listById)
 
+    app.route('/bolaonfl/register/')
+        .post(userController.register)
+
     app.route('/bolaonfl/login/')
         .get(userController.login)
 
@@ -41,5 +45,9 @@ module.exports = function (app) {
     // Cookies Routing
     app.route('/bolaonfl/cookies/')
         .post(cookiesController.update)
+
+    // Ranking Routing
+    app.route('/bolaonfl/ranking/:season/')
+        .get(rankingController.listBySeason)
 };
 

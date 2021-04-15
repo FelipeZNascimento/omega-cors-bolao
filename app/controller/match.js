@@ -44,11 +44,44 @@ exports.list = function (req, res) {
             ? SEASON_MAPPING[season]
             : season,
         week,
-        function (err, task) {
+        function (err, response) {
             if (err) {
                 res.status(400).send(err);
             } else {
-                res.send(task);
+                const dataObject = {
+                    season: season,
+                    week: week,
+                    matches: []
+                };
+
+                const matches = response.map((match) => ({
+                    id: match.id,
+                    timestamp: match.timestamp,
+                    status: match.status,
+                    away: {
+                        id: match.idTeamAway,
+                        name: match.teamAway,
+                        alias: match.teamAwayAlias,
+                        code: match.teamAwayCode,
+                        possession: match.possession === 'away',
+                        score: match.awayScore,
+                        background: match.teamAwayBackground,
+                        foreground: match.teamAwayForeground
+                    },
+                    home: {
+                        id: match.idTeamHome,
+                        name: match.teamHome,
+                        alias: match.teamHomeAlias,
+                        code: match.teamHomeCode,
+                        possession: match.possession === 'home',
+                        score: match.homeScore,
+                        background: match.teamHomeBackground,
+                        foreground: match.teamHomeForeground,
+                    }
+                }));
+
+                dataObject.matches = matches;
+                res.send(dataObject);
             }
         }
     );
