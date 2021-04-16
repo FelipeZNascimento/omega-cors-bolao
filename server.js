@@ -5,8 +5,7 @@ const express = require('express'),
     session = require('express-session'),
     MySQLStore = require('express-mysql-session')(session),
     SQLConfig = require('./app/const/sqlConfig'),
-    dotenv = require('dotenv'),
-    mysql = require('mysql');
+    dotenv = require('dotenv');
 
 dotenv.config();
 app.options('*', cors());
