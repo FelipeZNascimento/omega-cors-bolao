@@ -15,7 +15,8 @@ exports.default = function (req, res) {
             } else {
                 const seasonInfo = {
                     currentSeason: response[0].id,
-                    currentWeek: DefaultConfig.currentWeek
+                    currentWeek: DefaultConfig.currentWeek,
+                    loggedUser: req.session.user
                 };
 
                 res.send(seasonInfo);

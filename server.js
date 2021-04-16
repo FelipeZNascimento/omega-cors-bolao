@@ -1,37 +1,42 @@
 const express = require('express'),
-    app = express(),
+    app = module.exports = express(),
     cors = require('cors'),
     port = process.env.PORT || 8081,
     session = require('express-session'),
     MySQLStore = require('express-mysql-session')(session),
     SQLConfig = require('./app/const/sqlConfig'),
-    dotenv = require('dotenv');
+    dotenv = require('dotenv'),
+    mysql = require('mysql');
 
 dotenv.config();
-var sessionStore = new MySQLStore(SQLConfig.returnConfig(port));
-
 app.options('*', cors());
-app.use(cors());
+app.use(cors({
+    origin: ['http://localhost:3000', 'https://bolao.omegafox.me/'],
+    methods: ['POST', 'PUT', 'GET', 'OPTIONS', 'HEAD'],
+    credentials: true
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-const sessionSecret = process.env.SESSION_SECRET;
+var sessionStore = new MySQLStore(SQLConfig.returnConfig(port));
+const sessionSecret = process.env.SESSION_SECRET; 
+
 const twentyEightDays = 28 * 24 * 60 * 60 * 1000;
 
-const sessionInfo = {
+app.use(session({
+    key: 'omega-cors-bolao-nfl-session', 
+    secret: sessionSecret,
+    fetchs: 0,
     cookie: {
         maxAge: twentyEightDays,
-        secret: sessionSecret
+        secure: false
     },
-    key: 'omega-cors-bolao-nfl-session',
-    secret: sessionSecret,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
     user: null
-};
+}));
 
-app.use(session(sessionInfo));
 app.listen(port);
 
 console.log('API server started on: ' + port);

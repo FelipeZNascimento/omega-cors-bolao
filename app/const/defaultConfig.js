@@ -1,5 +1,5 @@
 let config = {
-    seasonId: 7,
+    seasonId: process.env.SEASON,
     currentWeek: 1
 }
 

@@ -38,7 +38,7 @@ module.exports = function (app) {
         .post(userController.register)
 
     app.route('/bolaonfl/login/')
-        .get(userController.login)
+        .post(userController.login)
 
     app.route('/bolaonfl/logout/')
         .get(userController.logout)

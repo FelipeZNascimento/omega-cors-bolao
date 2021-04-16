@@ -3,13 +3,12 @@ var sql = require('../../sql/sql');
 var User = function (user) {
     this.color = user.color;
     this.cookies = user.cookies;
-    this.full_name = user.full_name;
+    this.fullName = user.fullName;
     this.icon = user.icon;
     this.id = user.id;
-    this.login = user.login;
+    this.email = user.email;
     this.name = user.name;
     this.password = user.password;
-    this.status = user.status;
     this.user = user.user;
 };
 
@@ -123,7 +122,7 @@ User.register = async function (season, userData, result) {
 
 User.login = function (season, userData, result) {
     sql.query(
-        `SELECT SQL_NO_CACHE users.id, users.login, users.name, users.full_name,
+        `SELECT SQL_NO_CACHE users.id, users.login as email, users.name, users.full_name as fullName,
         users_icon.icon, users_icon.color
         FROM users
         INNER JOIN users_season ON users.id = users_season.id_user 
@@ -131,18 +130,14 @@ User.login = function (season, userData, result) {
         LEFT JOIN users_icon ON users.id = users_icon.id_user
         WHERE users.login = ? 
         AND users.password = ?`,
-        [season, userData.login, userData.password],
+        [season, userData.email, userData.password],
         function (err, res) {
             if (err) {
                 console.log("error: ", err);
                 result(err, null);
             }
             else {
-                if (res.length === 0) {
-                    result('User not found', null);
-                } else {
-                    result(null, res);
-                }
+                result(null, res);
             }
         });
 };

@@ -48,12 +48,6 @@ exports.list = function (req, res) {
             if (err) {
                 res.status(400).send(err);
             } else {
-                const dataObject = {
-                    season: season,
-                    week: week,
-                    matches: []
-                };
-
                 const matches = response.map((match) => ({
                     id: match.id,
                     timestamp: match.timestamp,
@@ -80,7 +74,12 @@ exports.list = function (req, res) {
                     }
                 }));
 
-                dataObject.matches = matches;
+                const dataObject = {
+                    season: season,
+                    week: week,
+                    matches: matches
+                };
+
                 res.send(dataObject);
             }
         }

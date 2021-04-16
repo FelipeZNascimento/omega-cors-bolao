@@ -68,9 +68,9 @@ exports.login = function (req, res) {
     };
 
     const season = process.env.SEASON;
-    const userData = new User(req.query);
+    const userData = new User(req.body);
 
-    if (userData.login && userData.password) {
+    if (userData.email && userData.password) {
         User.login(
             season,
             userData,
@@ -80,34 +80,10 @@ exports.login = function (req, res) {
                 } else {
                     if (data.length > 0) {
                         req.session.user = new User(data[0]);
+                        res.send(data[0]);
+                    } else {
+                        res.send(null);
                     }
-                    res.send(data);
-                }
-            }
-        );
-    } else if (userData.cookies && userData.id) {
-        User.loginCookies(
-            season,
-            userData,
-            function (err, data) {
-                if (err) {
-                    res.status(400).send(err);
-                } else {
-                    if (data.length > 0) {
-                        req.session.user = new User(data[0]);
-                        Cookies.update(
-                            id,
-                            cookie,
-                            function (err, task) {
-                                if (err) {
-                                    res.status(400).send(err);
-                                } else {
-                                    res.send(task);
-                                }
-                            }
-                        );
-                    }
-                    res.send(data);
                 }
             }
         );
