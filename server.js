@@ -24,10 +24,9 @@ var sessionStore = new MySQLStore(SQLConfig.returnConfig(port));
 const sessionSecret = process.env.SESSION_SECRET;
 
 const sevenDays = 7 * 24 * 60 * 60 * 1000;
-app.use(session({
+const sessionSettings = {
     key: 'omega-cors-bolao-nfl-session',
     secret: sessionSecret,
-    fetchs: 0,
     cookie: {
         maxAge: sevenDays,
         // sameSite: 'none',
@@ -37,12 +36,14 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     user: null
-}));
+};
 
 if (app.get('env') === 'production') {
     app.set('trust proxy', 1) // trust first proxy
     sess.cookie.sameSite = 'none' // serve secure cookies
 }
+
+app.use(session(sessionSettings));
 
 app.listen(port, function () {
     console.log('CORS-enabled web server listening on port ' + port);
