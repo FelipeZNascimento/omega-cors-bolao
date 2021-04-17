@@ -8,15 +8,16 @@ const express = require('express'),
     dotenv = require('dotenv');
 
 dotenv.config();
-const allowedOrigins = ['http://localhost:3000', 'https://bolao.omegafox.me'];
-app.use(cors({ credentials: true, origin: allowedOrigins }));
-app.options('*', cors());
+const allowedOrigins = [
+    'http://localhost:3000',
+    /\.omegafox\.me$/
+];
 
-// app.use(cors({
-//     origin: '*',
-//     methods: ['POST', 'PUT', 'GET', 'OPTIONS', 'HEAD'],
-//     credentials: true
-// }));
+app.use(cors({
+    credentials: true,
+    origin: allowedOrigins
+}));
+app.options('*', cors());
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
