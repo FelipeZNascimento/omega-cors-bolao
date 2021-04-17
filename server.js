@@ -40,7 +40,8 @@ const sessionSettings = {
 
 if (app.get('env') === 'production') {
     app.set('trust proxy', 1) // trust first proxy
-    sessionSettings.cookie.sameSite = 'none' // serve secure cookies
+    sessionSettings.secure = false; // serve secure cookies
+    sessionSettings.cookie.sameSite = 'none'; // serve secure cookies
 }
 
 app.use(session(sessionSettings));
