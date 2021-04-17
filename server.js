@@ -10,7 +10,7 @@ const express = require('express'),
 dotenv.config();
 app.options('*', cors());
 app.use(cors({
-    origin: ['http://localhost', 'https://bolao.omegafox.me/', 'http://bolao.omegafox.me/'],
+    origin: '*',
     methods: ['POST', 'PUT', 'GET', 'OPTIONS', 'HEAD'],
     credentials: true
 }));
