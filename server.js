@@ -31,7 +31,7 @@ app.use(session({
     fetchs: 0,
     cookie: {
         maxAge: sevenDays,
-        // secure: true
+        secure: process.env.SECURE_COOKIES
     },
     store: sessionStore,
     resave: false,
