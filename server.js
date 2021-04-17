@@ -26,7 +26,6 @@ const sessionSecret = process.env.SESSION_SECRET;
 
 const sevenDays = 7 * 24 * 60 * 60 * 1000;
 const sessionSettings = {
-    key: 'omega-cors-bolao-nfl-session',
     secret: sessionSecret,
     cookie: {
         maxAge: sevenDays,
