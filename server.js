@@ -8,8 +8,8 @@ const express = require('express'),
     dotenv = require('dotenv');
 
 dotenv.config();
-app.options('*', cors());
 app.use(cors());
+app.options('*', cors());
 
 // app.use(cors({
 //     origin: '*',
