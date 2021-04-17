@@ -8,22 +8,33 @@ const express = require('express'),
     dotenv = require('dotenv');
 
 dotenv.config();
-app.options('*', cors());
-app.use(cors({
-    origin: ['http://localhost:3000', 'http://bolao.omegafox.me/'],
-    methods: ['POST', 'PUT', 'GET', 'OPTIONS', 'HEAD'],
+
+
+var allowedOrigins = ['http://localhost:3000', 'https://bolao.omegafox.me/'];
+var corsOptions = {
+    origin: function (origin, callback) {
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true)
+        } else {
+            callback(new Error('Not allowed by CORS'))
+        }
+    },
+    methods: ['POST', 'GET', 'OPTIONS', 'HEAD'],
     credentials: true
-}));
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 var sessionStore = new MySQLStore(SQLConfig.returnConfig(port));
-const sessionSecret = process.env.SESSION_SECRET; 
+const sessionSecret = process.env.SESSION_SECRET;
 
 const twentyEightDays = 28 * 24 * 60 * 60 * 1000;
 
 app.use(session({
-    key: 'omega-cors-bolao-nfl-session', 
+    key: 'omega-cors-bolao-nfl-session',
     secret: sessionSecret,
     fetchs: 0,
     cookie: {
