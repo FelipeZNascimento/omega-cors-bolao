@@ -10,19 +10,24 @@ const express = require('express'),
 dotenv.config();
 
 
-var allowedOrigins = ['http://localhost:3000', 'https://bolao.omegafox.me/'];
-var corsOptions = {
-    origin: function (origin, callback) {
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true)
-        } else {
-            callback(new Error('Not allowed by CORS'))
-        }
-    },
-    methods: ['POST', 'GET', 'OPTIONS', 'HEAD'],
-    credentials: true
-};
+var allowedOrigins = ['https://bolao.omegafox.me', 'http://localhost'];
+// var corsOptions = {
+//     origin: function (origin, callback) {
+//         if (allowedOrigins.indexOf(origin) !== -1) {
+//             callback(null, true)
+//         } else {
+//             callback(new Error('Not allowed by CORS'))
+//         }
+//     },
+//     methods: ['POST', 'GET', 'OPTIONS', 'HEAD'],
+//     credentials: true
+// };
 
+var corsOptions = {
+    origin: allowedOrigins,
+    optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+  }
+  
 app.use(cors(corsOptions));
 app.options('*', cors());
 app.use(express.urlencoded({ extended: true }));
@@ -47,7 +52,9 @@ app.use(session({
     user: null
 }));
 
-app.listen(port);
+app.listen(port, function () {
+    console.log('CORS-enabled web server listening on port ' + port);
+});
 
 console.log('API server started on: ' + port);
 
