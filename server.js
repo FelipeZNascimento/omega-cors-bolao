@@ -10,7 +10,7 @@ const express = require('express'),
 dotenv.config();
 app.options('*', cors());
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://bolao.omegafox.me/'],
+    origin: ['http://localhost:3000', 'http://bolao.omegafox.me/'],
     methods: ['POST', 'PUT', 'GET', 'OPTIONS', 'HEAD'],
     credentials: true
 }));
@@ -28,7 +28,7 @@ app.use(session({
     fetchs: 0,
     cookie: {
         maxAge: twentyEightDays,
-        secure: false
+        secure: process.env.SECURE_COOKIES
     },
     store: sessionStore,
     resave: false,
