@@ -8,7 +8,8 @@ const express = require('express'),
     dotenv = require('dotenv');
 
 dotenv.config();
-app.use(cors({ credentials: true }));
+const allowedOrigins = ['http://localhost:3000', 'https://bolao.omegafox.me'];
+app.use(cors({ credentials: true, origin: allowedOrigins }));
 app.options('*', cors());
 
 // app.use(cors({
@@ -39,9 +40,12 @@ const sessionSettings = {
 };
 
 if (app.get('env') === 'production') {
+    console.log('is production');
     app.set('trust proxy', 1) // trust first proxy
     sessionSettings.cookie.secure = true; // serve secure cookies
     sessionSettings.cookie.sameSite = 'none'; // serve secure cookies
+} else {
+    sessionSettings.cookie.secure = false;
 }
 
 app.use(session(sessionSettings));
