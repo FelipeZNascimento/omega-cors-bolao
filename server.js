@@ -9,11 +9,13 @@ const express = require('express'),
 
 dotenv.config();
 app.options('*', cors());
-app.use(cors({
-    origin: '*',
-    methods: ['POST', 'PUT', 'GET', 'OPTIONS', 'HEAD'],
-    credentials: true
-}));
+app.use(cors());
+
+// app.use(cors({
+//     origin: '*',
+//     methods: ['POST', 'PUT', 'GET', 'OPTIONS', 'HEAD'],
+//     credentials: true
+// }));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
