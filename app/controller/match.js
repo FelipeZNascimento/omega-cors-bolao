@@ -1,4 +1,6 @@
 const Match = require('../model/match.js');
+const Bets = require('../model/bets.js');
+const dynamicSort = require('../utilities/sort');
 const SEASON_MAPPING = require('../const/seasonMapping');
 
 exports.listBySeason = function (req, res) {
@@ -44,43 +46,96 @@ exports.list = function (req, res) {
             ? SEASON_MAPPING[season]
             : season,
         week,
-        function (err, response) {
+        function (err, matches) {
             if (err) {
                 res.status(400).send(err);
             } else {
-                const matches = response.map((match) => ({
-                    id: match.id,
-                    timestamp: match.timestamp,
-                    status: match.status,
-                    away: {
-                        id: match.idTeamAway,
-                        name: match.teamAway,
-                        alias: match.teamAwayAlias,
-                        code: match.teamAwayCode,
-                        possession: match.possession === 'away',
-                        score: match.awayScore,
-                        background: match.teamAwayBackground,
-                        foreground: match.teamAwayForeground
-                    },
-                    home: {
-                        id: match.idTeamHome,
-                        name: match.teamHome,
-                        alias: match.teamHomeAlias,
-                        code: match.teamHomeCode,
-                        possession: match.possession === 'home',
-                        score: match.homeScore,
-                        background: match.teamHomeBackground,
-                        foreground: match.teamHomeForeground,
+                Bets.bySeasonAndWeek(
+                    matches.map((match) => match.id),
+                    function (err, bets) {
+                        if (err) {
+                            res.status(400).send(err);
+                        } else {
+                            const matchesObject = matches.map((match) => {
+                                const loggedUserBetsObject = req.session.user === null
+                                    ? null
+                                    : bets
+                                        .filter((bet) => bet.matchId === match.id)
+                                        .filter((bet) => bet.userId === req.session.user.id)
+                                        .map((bet) => (
+                                            {
+                                                id: bet.id,
+                                                matchId: bet.matchId,
+                                                value: bet.betValue,
+                                                user: {
+                                                    id: bet.userId,
+                                                    icon: bet.userIcon,
+                                                    color: bet.userColor,
+                                                    name: bet.userName
+                                                }
+                                            }
+                                        ))[0];
+
+                                const betsObject = bets
+                                    .filter((bet) => bet.matchId === match.id)
+                                    .filter((bet) => bet.userId !== req.session.user.id)
+                                    .sort(dynamicSort('userName'))
+                                    .map((bet) => (
+                                        {
+                                            id: bet.id,
+                                            matchId: bet.matchId,
+                                            value: bet.betValue,
+                                            user: {
+                                                id: bet.userId,
+                                                icon: bet.userIcon,
+                                                color: bet.userColor,
+                                                name: bet.userName
+                                            }
+                                        }
+                                    ));
+
+                                return (
+                                    {
+                                        id: match.id,
+                                        timestamp: match.timestamp,
+                                        status: match.status,
+                                        away: {
+                                            id: match.idTeamAway,
+                                            name: match.teamAway,
+                                            alias: match.teamAwayAlias,
+                                            code: match.teamAwayCode,
+                                            possession: match.possession === 'away',
+                                            score: match.awayScore,
+                                            background: match.teamAwayBackground,
+                                            foreground: match.teamAwayForeground
+                                        },
+                                        home: {
+                                            id: match.idTeamHome,
+                                            name: match.teamHome,
+                                            alias: match.teamHomeAlias,
+                                            code: match.teamHomeCode,
+                                            possession: match.possession === 'home',
+                                            score: match.homeScore,
+                                            background: match.teamHomeBackground,
+                                            foreground: match.teamHomeForeground,
+                                        },
+                                        loggedUserBets: loggedUserBetsObject,
+                                        bets: betsObject
+                                    }
+                                )
+                            });
+
+                            const dataObject = {
+                                season: season,
+                                week: week,
+                                matches: matchesObject
+                            };
+
+                            res.send(dataObject);
+                        }
                     }
-                }));
+                )
 
-                const dataObject = {
-                    season: season,
-                    week: week,
-                    matches: matches
-                };
-
-                res.send(dataObject);
             }
         }
     );

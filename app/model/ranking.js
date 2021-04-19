@@ -53,7 +53,11 @@ const returnPoints = (match, bet) => {
     return 0;
 };
 
-Ranking.bySeason = function(season, result) {
+Ranking.byWeek = function(season, week, user, betsData, result) {
+    return {
+        points: 10,
+        blabla: 20
+    }
 };
 
 module.exports = Ranking;

@@ -52,7 +52,7 @@ module.exports = function (app) {
         .post(cookiesController.update)
 
     // Ranking Routing
-    app.route('/bolaonfl/ranking/:season/')
-        .get(rankingController.listBySeason)
+    app.route('/bolaonfl/ranking/:season/:week')
+        .get(rankingController.listBySeasonAndWeek)
 };
 

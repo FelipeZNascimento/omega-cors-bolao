@@ -29,9 +29,7 @@ const sevenDays = 7 * 24 * 60 * 60 * 1000;
 const sessionSettings = {
     secret: sessionSecret,
     cookie: {
-        maxAge: sevenDays,
-        // sameSite: 'none',
-        // secure: 'auto'
+        maxAge: sevenDays
     },
     store: sessionStore,
     resave: false,
