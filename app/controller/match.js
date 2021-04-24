@@ -1,6 +1,6 @@
 const Match = require('../model/match.js');
 const Bets = require('../model/bets.js');
-const dynamicSort = require('../utilities/sort');
+const Sort = require('../utilities/sort');
 const SEASON_MAPPING = require('../const/seasonMapping');
 
 exports.listBySeason = function (req, res) {
@@ -79,7 +79,7 @@ exports.list = function (req, res) {
                                 const betsObject = bets
                                     .filter((bet) => bet.matchId === match.id)
                                     .filter((bet) => bet.userId !== req.session.user.id)
-                                    .sort(dynamicSort('userName'))
+                                    .sort(Sort.dynamic('userName'))
                                     .map((bet) => (
                                         {
                                             id: bet.id,

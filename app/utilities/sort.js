@@ -1,3 +1,5 @@
+let sort = {};
+
 const dynamicSort = (property) => {
     let sortOrder = 1;
     if (property[0] === "-") {
@@ -13,4 +15,11 @@ const dynamicSort = (property) => {
     }
 }
 
-module.exports = dynamicSort;
+const numberSort = (property) => {
+    return function(a, b) { return b[property] - a[property] }
+};
+
+sort.dynamic = dynamicSort;
+sort.number = numberSort;
+
+module.exports = sort;
