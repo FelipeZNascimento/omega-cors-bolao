@@ -34,7 +34,6 @@ const sessionSettings = {
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
-    user: null
 };
 
 if (app.get('env') === 'production') {

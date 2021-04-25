@@ -50,18 +50,21 @@ exports.list = function (req, res) {
             if (err) {
                 res.status(400).send(err);
             } else {
-                Bets.bySeasonAndWeek(
+                Bets.byMatchIds(
                     matches.map((match) => match.id),
                     function (err, bets) {
                         if (err) {
                             res.status(400).send(err);
                         } else {
+                            const sessionUser = req.session.user === undefined ? null : req.session.user;
+                            const sessionUserId = req.session.user === undefined ? null : req.session.user.id;
+
                             const matchesObject = matches.map((match) => {
-                                const loggedUserBetsObject = req.session.user === null
+                                const loggedUserBetsObject = sessionUser === null
                                     ? null
                                     : bets
                                         .filter((bet) => bet.matchId === match.id)
-                                        .filter((bet) => bet.userId === req.session.user.id)
+                                        .filter((bet) => bet.userId === sessionUserId)
                                         .map((bet) => (
                                             {
                                                 id: bet.id,
@@ -78,7 +81,7 @@ exports.list = function (req, res) {
 
                                 const betsObject = bets
                                     .filter((bet) => bet.matchId === match.id)
-                                    .filter((bet) => bet.userId !== req.session.user.id)
+                                    .filter((bet) => bet.userId !== sessionUserId)
                                     .sort(Sort.dynamic('userName'))
                                     .map((bet) => (
                                         {

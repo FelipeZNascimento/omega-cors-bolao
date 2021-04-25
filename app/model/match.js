@@ -20,12 +20,15 @@ const now = new Date();
 
 Match.getBySeason = function (season, result) {
     sql.query(
-        `SELECT SQL_NO_CACHE matches.id, matches.timestamp, matches.week, matches.away_points, matches.home_points, matches.status, matches.possession, 
-        teamsHome.name AS team_home, teamsHome.alias AS team_home_alias, teamsHome.id AS id_team_home, teamsHome.code AS team_home_code, 
-        teamsAway.name AS team_away, teamsAway.alias AS team_away_alias, teamsAway.id AS id_team_away, teamsAway.code AS team_away_code
+        `SELECT SQL_NO_CACHE matches.id, matches.timestamp, matches.week, matches.id_season as season, matches.status, matches.possession,
+        matches.away_points as awayScore, matches.home_points as homeScore,
+        teamHome.name AS teamHome, teamHome.alias AS teamHomeAlias, teamHome.id AS idTeamHome, 
+        teamHome.code AS teamHomeCode, teamHome.background AS teamHomeBackground, teamHome.foreground AS teamHomeForeground, 
+        teamAway.name AS teamAway, teamAway.alias AS teamAwayAlias, teamAway.id AS idTeamAway,
+        teamAway.code AS teamAwayCode, teamAway.background AS teamAwayBackground, teamAway.foreground AS teamAwayForeground
         FROM matches
-        INNER JOIN teams as teamsHome 		ON matches.id_home_team=teamsHome.id
-        INNER JOIN teams as teamsAway 		ON matches.id_away_team=teamsAway.id
+        INNER JOIN teams as teamHome 		ON matches.id_home_team = teamHome.id
+        INNER JOIN teams as teamAway 		ON matches.id_away_team = teamAway.id
         WHERE matches.id_season = ?
         ORDER BY matches.timestamp ASC`,
         [season],
@@ -64,7 +67,7 @@ Match.getByWeek = function (week, result) {
 
 Match.getBySeasonAndWeek = function (season, week, result) {
     sql.query(
-        `SELECT SQL_NO_CACHE matches.id, matches.timestamp, matches.week, matches.status, matches.possession,
+        `SELECT SQL_NO_CACHE matches.id, matches.timestamp, matches.week, matches.id_season as season, matches.status, matches.possession,
         matches.away_points as awayScore, matches.home_points as homeScore,
         teamHome.name AS teamHome, teamHome.alias AS teamHomeAlias, teamHome.id AS idTeamHome, 
         teamHome.code AS teamHomeCode, teamHome.background AS teamHomeBackground, teamHome.foreground AS teamHomeForeground, 

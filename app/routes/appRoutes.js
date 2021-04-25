@@ -1,5 +1,6 @@
 'use strict';
 module.exports = function (app) {
+    const betsController = require('../controller/bets');
     const cookiesController = require('../controller/cookies');
     const configController = require('../controller/config');
     const matchController = require('../controller/match');
@@ -52,7 +53,15 @@ module.exports = function (app) {
         .post(cookiesController.update)
 
     // Ranking Routing
+    app.route('/bolaonfl/ranking/season/:season')
+        .get(rankingController.listBySeason)
+
     app.route('/bolaonfl/ranking/:season/:week')
         .get(rankingController.listBySeasonAndWeek)
+
+    // Extra Bets
+    app.route('/bolaonfl/bets/extras/:season/')
+        .get(betsController.listExtraBets)
+
 };
 

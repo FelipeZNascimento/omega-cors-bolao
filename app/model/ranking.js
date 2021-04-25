@@ -8,7 +8,7 @@ var Ranking = function (ranking) {
 
 Ranking.returnPoints = (match, betValue, maxPoints) => {
     if (match.awayScore - match.homeScore > 0) { //away team won
-        if (match.awayScore - match.homeScore > 7) {//away team won by more than 7 points (easy win)
+        if (match.awayScore - match.homeScore > 7) { //away team won by more than 7 points (easy win)
             if (betValue === BET_VALUES.AWAY_EASY) {
                 return maxPoints;
             } else if (betValue === 1) {
