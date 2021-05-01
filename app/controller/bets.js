@@ -1,19 +1,84 @@
 const Bets = require('../model/bets.js');
 const Match = require('../model/match.js');
+const Teams = require('../model/team.js');
 
 exports.listExtraBets = function (req, res) {
     const { season } = req.params;
 
-    Bets.extraBets(
-        season,
-        function (err, task) {
+    Teams.getAll(
+        function (err, teams) {
             if (err) {
                 res.status(400).send(err);
             } else {
-                res.send(task);
+                Bets.extraBets(
+                    season > 2000
+                        ? SEASON_MAPPING[season]
+                        : season,
+                    function (err, extraBets) {
+                        if (err) {
+                            res.status(400).send(err);
+                        } else {
+
+                            const afc = {
+                                north: [],
+                                east: [],
+                                south: [],
+                                west: []
+                            };
+
+                            const nfc = {
+                                north: [],
+                                east: [],
+                                south: [],
+                                west: []
+                            };
+
+                            teams.forEach((team) => {
+                                if (team.conference.toLowerCase() === 'afc') {
+                                    afc[team.division.toLowerCase()].push(team);
+                                }
+                                if (team.conference.toLowerCase() === 'nfc') {
+                                    nfc[team.division.toLowerCase()].push(team);
+                                }
+                            })
+
+                            let extraBetsResults = null;
+                            let extraBetsUsers = null;
+
+                            if (extraBets.results.length > 0) {
+                                extraBetsResults = JSON.parse(extraBets.results[0].json);
+                            }
+
+                            if (extraBets.bets.length > 0) {
+                                extraBetsUsers = extraBets.bets.map((extraBet) => {
+                                    return ({
+                                        userId: extraBet.idUser,
+                                        username: extraBet.userName,
+                                        icon: extraBet.userIcon,
+                                        color: extraBet.userColor,
+                                        bets: JSON.parse(extraBet.json)
+                                    })
+                                })
+                            }
+
+                            const dataObject = {
+                                season,
+                                teams: {
+                                    afc,
+                                    nfc
+                                },
+                                results: extraBetsResults,
+                                bets: extraBetsUsers
+                            };
+
+                            res.send(dataObject);
+                        }
+                    }
+                );
             }
         }
-    );
+
+    )
 };
 
 exports.listBetsBySeasonAndWeek = function (req, res) {

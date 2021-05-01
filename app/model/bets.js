@@ -67,8 +67,11 @@ Bets.extraBets = function (season, result) {
             }
             else {
                 sql.query(
-                    `SELECT SQL_NO_CACHE id_user as idUser, id_season as idSeason, json
+                    `SELECT SQL_NO_CACHE extra_bets_new.id_user as idUser, extra_bets_new.id_season as idSeason, extra_bets_new.json,
+                    users.name as userName, users_icon.icon as userIcon, users_icon.color as userColor
                     FROM extra_bets_new
+                    INNER JOIN users 		ON users.id = extra_bets_new.id_user
+                    LEFT JOIN users_icon    ON users.id = users_icon.id_user
                     WHERE id_season = ?`,
                     [season],
                     function (err, res) {
