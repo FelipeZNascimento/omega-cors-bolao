@@ -59,9 +59,12 @@ module.exports = function (app) {
     app.route('/bolaonfl/ranking/:season/:week')
         .get(rankingController.listBySeasonAndWeek)
 
-    // Extra Bets
+    // Bets
     app.route('/bolaonfl/bets/extras/:season/')
         .get(betsController.listExtraBets)
+
+    app.route('/bolaonfl/bets/:season/:week')
+        .get(betsController.listBetsBySeasonAndWeek)
 
 };
 
