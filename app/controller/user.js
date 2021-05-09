@@ -1,10 +1,10 @@
 const validateEmail = require('../utilities/emailChecker');
 const User = require('../model/user.js');
 
-async function checkExistingValues(email, name) {
+async function checkExistingValues(email, name, logedUserId = null) {
     const allQueries = [
-        User.checkEmail(email),
-        User.checkName(name)
+        User.checkEmail(email, logedUserId || ''),
+        User.checkName(name, logedUserId || '')
     ];
 
     const allResults = await Promise.allSettled(allQueries);
@@ -29,29 +29,56 @@ async function checkExistingValues(email, name) {
 }
 
 exports.update = async function (req, res) {
-    const userData = new User(req.query);
+    const userData = new User(req.body);
 
     try {
-        if (!userData.name || !userData.fullName) {
-            throw new Error('Missing parameters');
-        } else if (!validateEmail(userData.email)) {
+        if (!req.session.user) {
+            throw new Error('No live session');
+        };
+
+        const { user } = req.session;
+
+        if (!validateEmail(userData.email)) {
             throw new Error('Invalid email');
         }
-        const checkResult = await checkExistingValues(userData.email, userData.name);
+
+        const checkResult = await checkExistingValues(userData.email, userData.name, user.id);
 
         if (checkResult !== '') {
             throw new Error(checkResult);
         }
 
-        await User.updateInfo(userData)
-            .then((data) => {
-                if (data.length > 0) {
-                    req.session.user = new User(data[0]);
-                }
-                res.send(data);
+        if (userData.name === '') {
+            userData.name = user.name;
+        }
+
+        const allQueries = [
+            User.updateInfo(user.id, userData)
+        ];
+
+        if (userData.newPassword) {
+            allQueries.push(User.updatePassword(user.id, userData));
+        }
+
+        const allResults = await Promise.allSettled(allQueries);
+        const errors = allResults
+            .filter(p => p.status === 'rejected')
+            .map(p => p.reason);
+
+        if (errors.length > 0) {
+            const errorMessage = errors.map((error) => error);
+            throw new Error(errorMessage);
+        }
+
+        await User.getById(user.id)
+            .then((user) => {
+                const newUser = new User(user[0]);
+                req.session.user = newUser;
+                res.send(newUser);
             })
 
     } catch (err) {
+        console.log(err);
         res.status(400).send(err.message);
     }
 };
@@ -116,8 +143,9 @@ exports.register = async function register(req, res) {
                 await User.login(season, userData)
                     .then((loginResult) => {
                         if (loginResult.length > 0) {
-                            req.session.user = new User(loginResult[0]);
-                            res.send(loginResult[0]);
+                            const newUser = new User(loginResult[0]);
+                            req.session.user = newUser
+                            res.send(newUser);
                         } else {
                             res.send(null);
                         }

@@ -19,9 +19,6 @@ const calculateUserExtraPoints = (user, extraBets, extraBetsResults) => {
     const bets = JSON.parse(userExtraBets.json);
     const betsKeys = Object.keys(bets);
 
-    // console.log(bets);
-    // console.log(betsKeys);
-
     betsKeys.forEach((key) => {
         if (parseInt(key) === EXTRA_BETS_MAPPING.AFC_WILDCARD.TYPE || parseInt(key) === EXTRA_BETS_MAPPING.NFC_WILDCARD.TYPE) {
             bets[key].forEach((wcBet) => {
@@ -124,72 +121,66 @@ exports.listBySeasonAndWeek = async function (req, res) {
     );
 };
 
-exports.listBySeason = function (req, res) {
+exports.listBySeason = async function (req, res) {
     const { season } = req.params;
 
     Match.getBySeason(
         season > 2000
             ? SEASON_MAPPING[season]
             : season,
-        function (err, matches) {
+        async function (err, matches) {
             if (err) {
                 res.status(400).send(err);
             } else {
                 Bets.byMatchIds(
                     matches.map((match) => match.id),
-                    function (err, bets) {
+                    async function (err, bets) {
                         if (err) {
                             res.status(400).send(err);
                         } else {
-                            User.getBySeason(
-                                season,
-                                function (err, users) {
-                                    if (err) {
-                                        res.status(400).send(err);
-                                    } else {
-                                        Bets.extraBets(
-                                            season > 2000
-                                                ? SEASON_MAPPING[season]
-                                                : season,
-                                            function (err, extraBets) {
-                                                if (err) {
-                                                    res.status(400).send(err);
-                                                } else {
-                                                    let extraBetsResults = null;
-                                                    let extraBetsUsers = null;
+                            await User.getBySeason(season)
+                                .then((users) => {
+                                    Bets.extraBets(
+                                        season > 2000
+                                            ? SEASON_MAPPING[season]
+                                            : season,
+                                        function (err, extraBets) {
+                                            if (err) {
+                                                res.status(400).send(err);
+                                            } else {
+                                                let extraBetsResults = null;
+                                                let extraBetsUsers = null;
 
-                                                    if (extraBets.results.length > 0) {
-                                                        extraBetsResults = JSON.parse(extraBets.results[0].json);
-                                                        extraBetsUsers = extraBets.bets;
-                                                    }
-
-                                                    const totalPossiblePoints = matches.reduce((acumulator, match) =>
-                                                        acumulator + MaxPointsPerBet.RegularSeason(parseInt(season), parseInt(match.week))
-                                                        , 0);
-
-                                                    const usersObject = users.map((user) => {
-                                                        const totalExtras = calculateUserExtraPoints(user, extraBetsUsers, extraBetsResults);
-                                                        const userObject = calculateUserPoints(user, matches, bets, totalPossiblePoints);
-
-                                                        userObject.totalPoints += totalExtras;
-                                                        userObject.totalExtras = totalExtras;
-
-                                                        return userObject;
-                                                    });
-
-                                                    const dataObject = {
-                                                        season: season,
-                                                        totalPossiblePoints,
-                                                        users: usersObject.sort((a, b) => b.totalPoints - a.totalPoints || b.totalBullseye - a.totalBullseye)
-                                                    };
-
-                                                    res.send(dataObject);
+                                                if (extraBets.results.length > 0) {
+                                                    extraBetsResults = JSON.parse(extraBets.results[0].json);
+                                                    extraBetsUsers = extraBets.bets;
                                                 }
+
+                                                const totalPossiblePoints = matches.reduce((acumulator, match) =>
+                                                    acumulator + MaxPointsPerBet.RegularSeason(parseInt(season), parseInt(match.week))
+                                                    , 0);
+
+                                                const usersObject = users.map((user) => {
+                                                    const totalExtras = calculateUserExtraPoints(user, extraBetsUsers, extraBetsResults);
+                                                    const userObject = calculateUserPoints(user, matches, bets, totalPossiblePoints);
+
+                                                    userObject.totalPoints += totalExtras;
+                                                    userObject.totalExtras = totalExtras;
+
+                                                    return userObject;
+                                                });
+
+                                                const dataObject = {
+                                                    season: season,
+                                                    totalPossiblePoints,
+                                                    users: usersObject.sort((a, b) => b.totalPoints - a.totalPoints || b.totalBullseye - a.totalBullseye)
+                                                };
+
+                                                res.send(dataObject);
                                             }
-                                        )
-                                    }
-                                }
-                            )
+                                        }
+                                    )
+                                });
                         }
                     }
                 )
