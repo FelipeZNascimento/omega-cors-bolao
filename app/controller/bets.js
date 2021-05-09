@@ -5,80 +5,43 @@ const Teams = require('../model/team.js');
 exports.listExtraBets = function (req, res) {
     const { season } = req.params;
 
-    Teams.getAll(
-        function (err, teams) {
+    Bets.extraBets(
+        season > 2000
+            ? SEASON_MAPPING[season]
+            : season,
+        function (err, extraBets) {
             if (err) {
                 res.status(400).send(err);
             } else {
-                Bets.extraBets(
-                    season > 2000
-                        ? SEASON_MAPPING[season]
-                        : season,
-                    function (err, extraBets) {
-                        if (err) {
-                            res.status(400).send(err);
-                        } else {
+                let extraBetsResults = null;
+                let extraBetsUsers = null;
 
-                            const afc = {
-                                north: [],
-                                east: [],
-                                south: [],
-                                west: []
-                            };
+                if (extraBets.results.length > 0) {
+                    extraBetsResults = JSON.parse(extraBets.results[0].json);
+                }
 
-                            const nfc = {
-                                north: [],
-                                east: [],
-                                south: [],
-                                west: []
-                            };
+                if (extraBets.bets.length > 0) {
+                    extraBetsUsers = extraBets.bets.map((extraBet) => {
+                        return ({
+                            userId: extraBet.idUser,
+                            username: extraBet.userName,
+                            icon: extraBet.userIcon,
+                            color: extraBet.userColor,
+                            bets: JSON.parse(extraBet.json)
+                        })
+                    });
+                }
 
-                            teams.forEach((team) => {
-                                if (team.conference.toLowerCase() === 'afc') {
-                                    afc[team.division.toLowerCase()].push(team);
-                                }
-                                if (team.conference.toLowerCase() === 'nfc') {
-                                    nfc[team.division.toLowerCase()].push(team);
-                                }
-                            })
+                const dataObject = {
+                    season,
+                    results: extraBetsResults,
+                    bets: extraBetsUsers
+                };
 
-                            let extraBetsResults = null;
-                            let extraBetsUsers = null;
-
-                            if (extraBets.results.length > 0) {
-                                extraBetsResults = JSON.parse(extraBets.results[0].json);
-                            }
-
-                            if (extraBets.bets.length > 0) {
-                                extraBetsUsers = extraBets.bets.map((extraBet) => {
-                                    return ({
-                                        userId: extraBet.idUser,
-                                        username: extraBet.userName,
-                                        icon: extraBet.userIcon,
-                                        color: extraBet.userColor,
-                                        bets: JSON.parse(extraBet.json)
-                                    })
-                                })
-                            }
-
-                            const dataObject = {
-                                season,
-                                teams: {
-                                    afc,
-                                    nfc
-                                },
-                                results: extraBetsResults,
-                                bets: extraBetsUsers
-                            };
-
-                            res.send(dataObject);
-                        }
-                    }
-                );
+                res.send(dataObject);
             }
         }
-
-    )
+    );
 };
 
 exports.listBetsBySeasonAndWeek = function (req, res) {
