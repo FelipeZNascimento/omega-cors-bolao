@@ -1,68 +1,135 @@
+const validateEmail = require('../utilities/emailChecker');
 const User = require('../model/user.js');
-const Cookies = require('../model/cookies.js');
 
-exports.listAll = function (req, res) {
-    User.getAll(
-        function (err, task) {
-            if (err) {
-                res.status(400).send(err);
-            } else {
-                res.send(task);
-            }
-        }
-    );
-};
+async function checkExistingValues(email, name) {
+    const allQueries = [
+        User.checkEmail(email),
+        User.checkName(name)
+    ];
 
-exports.listById = function (req, res) {
-    const { id } = req.params;
+    const allResults = await Promise.allSettled(allQueries);
+    const errors = allResults
+        .filter(p => p.status === 'rejected')
+        .map(p => p.reason);
 
-    User.getById(
-        id,
-        function (err, task) {
-            if (err) {
-                res.status(400).send(err);
-            } else {
-                res.send(task);
-            }
-        }
-    );
-};
+    if (errors.length > 0) {
+        return 'Connection error.';
+    }
 
-exports.register = function (req, res) {
-    const season = process.env.SEASON;
+    let errorMessage = '';
+    if (allResults[0].value.length > 0) {
+        errorMessage += 'Email já está sendo usado.'
+    }
+
+    if (allResults[1].value.length > 0) {
+        errorMessage += ' Nome já está sendo usado.'
+    }
+
+    return errorMessage;
+}
+
+exports.update = async function (req, res) {
     const userData = new User(req.query);
 
-    if (!userData.login || !userData.password || !userData.name) {
-        return res.status(400).send('Missing parameters.');
-    } else {
-        User.register(
-            season,
-            userData,
-            function (err, data) {
-                if (err) {
-                    res.status(400).send(err);
-                } else {
-                    User.login(
-                        season,
-                        userData,
-                        function (err, data) {
-                            if (err) {
-                                res.status(400).send(err);
-                            } else {
-                                if (data.length > 0) {
-                                    req.session.user = new User(data[0]);
-                                }
-                                res.send(data);
-                            }
-                        }
-                    );
+    try {
+        if (!userData.name || !userData.fullName) {
+            throw new Error('Missing parameters');
+        } else if (!validateEmail(userData.email)) {
+            throw new Error('Invalid email');
+        }
+        const checkResult = await checkExistingValues(userData.email, userData.name);
+
+        if (checkResult !== '') {
+            throw new Error(checkResult);
+        }
+
+        await User.updateInfo(userData)
+            .then((data) => {
+                if (data.length > 0) {
+                    req.session.user = new User(data[0]);
                 }
-            }
-        );
+                res.send(data);
+            })
+
+    } catch (err) {
+        res.status(400).send(err.message);
     }
 };
 
-exports.login = function (req, res) {
+exports.listAll = async function (req, res) {
+    try {
+        await User.getAll()
+            .then((list) => {
+                res.send(list);
+            })
+
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+};
+
+exports.listById = async function (req, res) {
+    const { id } = req.params;
+
+    try {
+        await User.getById(id)
+            .then((user) => {
+                res.send(user);
+            })
+
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+};
+
+exports.register = async function register(req, res) {
+    const season = process.env.SEASON;
+    const userData = new User(req.body);
+
+    try {
+        if (!userData.email || !userData.password || !userData.name || !userData.fullName) {
+            throw new Error('Missing parameters');
+        }
+        const checkResult = await checkExistingValues(userData.email, userData.name);
+
+        if (checkResult !== '') {
+            throw new Error(checkResult);
+        }
+
+        await User.register(userData)
+            .then(async (result) => {
+
+                const allQueries = [
+                    User.setOnCurrentSeason(season, result.insertId),
+                    User.setIcons(result.insertId)
+                ];
+
+                const allResults = await Promise.allSettled(allQueries);
+                const errors = allResults
+                    .filter(p => p.status === 'rejected')
+                    .map(p => p.reason);
+
+                if (errors.length > 0) {
+                    throw new Error('Connection error.');
+                }
+
+                await User.login(season, userData)
+                    .then((loginResult) => {
+                        if (loginResult.length > 0) {
+                            req.session.user = new User(loginResult[0]);
+                            res.send(loginResult[0]);
+                        } else {
+                            res.send(null);
+                        }
+                    })
+
+            })
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+};
+
+exports.login = async function (req, res) {
     if (req.session.user) {
         return res.status(400).send('User already logged in.');
     };
@@ -70,25 +137,22 @@ exports.login = function (req, res) {
     const season = process.env.SEASON;
     const userData = new User(req.body);
 
-    if (userData.email && userData.password) {
-        User.login(
-            season,
-            userData,
-            function (err, data) {
-                if (err) {
-                    res.status(400).send(err);
+    try {
+        if (!userData.email || !userData.password) {
+            throw new Error('Missing parameters');
+        }
+        await User.login(season, userData)
+            .then((loginResult) => {
+                if (loginResult.length > 0) {
+                    req.session.user = new User(loginResult[0]);
+                    res.send(loginResult[0]);
                 } else {
-                    if (data.length > 0) {
-                        req.session.user = new User(data[0]);
-                        res.send(data[0]);
-                    } else {
-                        res.send(null);
-                    }
+                    res.send(null);
                 }
-            }
-        );
-    } else {
-        res.status(400).send('Missing parameters');
+            })
+
+    } catch (err) {
+        res.status(400).send(err.message);
     }
 };
 
@@ -97,48 +161,6 @@ exports.logout = function (req, res) {
         return res.status(400).send('Logout: User not found.');
     }
 
-    const { cookie, id } = req.session.user;
-
-    Cookies.delete(
-        id,
-        cookie,
-        function (err, data) {
-            if (err) {
-                res.status(400).send(err);
-            } else {
-                req.session.destroy();
-                res.send(data);
-            }
-        }
-    )
+    req.session.destroy();
+    res.status(200).send('');
 };
-
-exports.check = function (req, res) {
-    const { login, name } = req.query;
-
-    if (login) {
-        User.checkEmail(
-            login,
-            function (err, data) {
-                if (err) {
-                    res.status(400).send(err);
-                } else {
-                    res.send(data);
-                }
-            }
-        )
-    } else if (name) {
-        User.checkName(
-            name,
-            function (err, data) {
-                if (err) {
-                    res.status(400).send(err);
-                } else {
-                    res.send(data);
-                }
-            }
-        )
-    } else {
-        res.status(400).send('Missing parameters');
-    }
-}

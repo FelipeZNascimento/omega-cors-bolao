@@ -75,7 +75,7 @@ const calculateUserPoints = (user, matches, bets, totalPossiblePoints) => {
     })
 }
 
-exports.listBySeasonAndWeek = function (req, res) {
+exports.listBySeasonAndWeek = async function (req, res) {
     const { season, week } = req.params;
 
     Match.getBySeasonAndWeek(
@@ -83,22 +83,19 @@ exports.listBySeasonAndWeek = function (req, res) {
             ? SEASON_MAPPING[season]
             : season,
         week,
-        function (err, matches) {
+        async function (err, matches) {
             if (err) {
                 res.status(400).send(err);
             } else {
                 Bets.byMatchIds(
                     matches.map((match) => match.id),
-                    function (err, bets) {
+                    async function (err, bets) {
                         if (err) {
                             res.status(400).send(err);
                         } else {
-                            User.getBySeason(
-                                season,
-                                function (err, users) {
-                                    if (err) {
-                                        res.status(400).send(err);
-                                    } else {
+                            try {
+                                await User.getBySeason(season)
+                                    .then((users) => {
                                         const totalPossiblePoints = matches.reduce((acumulator, match) =>
                                             acumulator + MaxPointsPerBet.RegularSeason(parseInt(season), parseInt(match.week))
                                             , 0);
@@ -113,9 +110,12 @@ exports.listBySeasonAndWeek = function (req, res) {
                                         };
 
                                         res.send(dataObject);
-                                    }
-                                }
-                            )
+
+                                    })
+
+                            } catch (err) {
+                                res.status(400).send(err.message);
+                            }
                         }
                     }
                 )

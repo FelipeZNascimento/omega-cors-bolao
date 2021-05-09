@@ -1,36 +1,34 @@
+const { promisify } = require('util');
 var sql = require('../../sql/sql');
+
+// node native promisify
+const asyncQuery = promisify(sql.query).bind(sql);
 
 var User = function (user) {
     this.color = user.color;
-    this.cookies = user.cookies;
     this.fullName = user.fullName;
     this.icon = user.icon;
     this.id = user.id;
     this.email = user.email;
     this.name = user.name;
     this.password = user.password;
+    this.newPassword = user.newPassword;
     this.user = user.user;
 };
 
-User.getAll = function (result) {
-    sql.query(
+User.getAll = async function () {
+    const rows = asyncQuery(
         `SELECT SQL_NO_CACHE users.id, users.login, users.name, users.full_name,
         users_icon.icon, users_icon.color
         FROM users
         LEFT JOIN users_icon ON users.id = users_icon.id_user`,
-        function (err, res) {
-            if (err) {
-                console.log("error: ", err);
-                result(err, null);
-            }
-            else {
-                result(null, res);
-            }
-        });
+    );
+
+    return rows;
 };
 
-User.getBySeason = function (season, result) {
-    sql.query(
+User.getBySeason = async function (season) {
+    const rows = asyncQuery(
         `SELECT SQL_NO_CACHE users.id, users.login as email, users.name, users.full_name as fullName,
         users_icon.icon, users_icon.color,
         users_season.id AS seasonId
@@ -38,90 +36,44 @@ User.getBySeason = function (season, result) {
         INNER JOIN users_season ON users.id = users_season.id_user AND users_season.id_season = ?
         LEFT JOIN users_icon ON users.id = users_icon.id_user`,
         [season],
-        function (err, res) {
-            if (err) {
-                console.log("error: ", err);
-                result(err, null);
-            }
-            else {
-                result(null, res);
-            }
-        });
+    );
+
+    return rows;
 };
 
-User.getById = function (id, result) {
-    sql.query(
+User.getById = async function (id) {
+    const rows = asyncQuery(
         `SELECT SQL_NO_CACHE users.id, users.login, users.name, users.full_name,
         users_icon.icon, users_icon.color
         FROM users
         LEFT JOIN users_icon ON users.id = users_icon.id_user
         WHERE users.id = ?`,
         [id],
-        function (err, res) {
-            if (err) {
-                console.log("error: ", err);
-                result(err, null);
-            }
-            else {
-                result(null, res);
-            }
-        }
     );
+
+    return rows;
 };
-  
-function setIcons(id, icon, color) {
-    sql.query(
+
+User.setIcons = async function (id, icon, color) {
+    const rows = asyncQuery(
         `INSERT INTO users_icon (id_user, icon, color) VALUES (?, ?, ?)`,
         [id, icon, color],
-        function (err, res) {
-            if (err) {
-                console.log("error: ", err);
-                return false;
-            }
-            else {
-                console.log(res);
-                return true;
-            }
-        }
     );
+
+    return rows;
 };
 
-function setOnCurrentSeason(season, id) {
-    sql.query(
+User.setOnCurrentSeason = async function (season, id) {
+    const rows = asyncQuery(
         `INSERT INTO users_season (id_user, id_season) VALUES (?, ?)`,
         [id, season],
-        function (err, res) {
-            if (err) {
-                console.log("error: ", err);
-                return false;
-            }
-            else {
-                return true;
-            }
-        }
     );
+
+    return rows;
 };
 
-User.register = async function (season, userData, result) {
-    sql.query(
-        `INSERT INTO users (login, password, name) VALUES (?, ?, ?)`,
-        [userData.login, userData.password, userData.name],
-        function (err, res) {
-            if (err) {
-                console.log("error: ", err);
-                result(err, null);
-            }
-            else {
-                setOnCurrentSeason(season, res.insertId);
-                setIcons(res.insertId, userData.icon, userData.color);
-                result(null, res);
-            }
-        }
-    );
-};
-
-User.login = function (season, userData, result) {
-    sql.query(
+User.login = async function (season, userData) {
+    const rows = asyncQuery(
         `SELECT SQL_NO_CACHE users.id, users.login as email, users.name, users.full_name as fullName,
         users_icon.icon, users_icon.color
         FROM users
@@ -131,74 +83,54 @@ User.login = function (season, userData, result) {
         WHERE users.login = ? 
         AND users.password = ?`,
         [season, userData.email, userData.password],
-        function (err, res) {
-            if (err) {
-                console.log("error: ", err);
-                result(err, null);
-            }
-            else {
-                result(null, res);
-            }
-        });
-};
-
-User.loginCookies = function (season, userData, result) {
-    sql.query(
-        `SELECT SQL_NO_CACHE users.id, users.login, users.name, users.full_name,
-        users_icon.icon, users_icon.color
-        FROM cookies
-        INNER JOIN users ON users.id=cookies.id_user 
-        AND cookies.id_user = ?
-        INNER JOIN users_season ON users.id = users_season.id_user 
-        AND users_season.id_season = ?
-        LEFT JOIN users_icon ON users.id = users_icon.id_user
-        WHERE cookies.cookie = ?`,
-        [userData.id, season, userData.cookies],
-        function (err, res) {
-            if (err) {
-                console.log("error: ", err);
-                result(err, null);
-            }
-            else {
-                if (res.length === 0) {
-                    result('User not found', null);
-                } else {
-                    result(null, res);
-                }
-            }
-        });
-};
-
-User.checkEmail = function (email, result) {
-    sql.query(
-        `SELECT SQL_NO_CACHE login FROM users WHERE login = ?`,
-        [email],
-        function (err, res) {
-            if (err) {
-                console.log("error: ", err);
-                result(err, null);
-            }
-            else {
-                result(null, res);
-            }
-        }
     );
+
+    return rows;
 };
 
-User.checkName = function (name, result) {
-    sql.query(
+User.updateInfo = async function (userData) {
+    const { id, name, fullName, email } = userData;
+
+    const rows = asyncQuery(
+        `UPDATE users 
+        SET name =  ?,
+        full_name = ?, 
+        login = ? 
+        WHERE id = ?`,
+        [name, fullName, email, id],
+    );
+
+    return rows;
+};
+
+User.checkEmail = async function (email) {
+    const rows = asyncQuery(
+        `SELECT SQL_NO_CACHE login FROM users WHERE login = ?`,
+        [email]
+    );
+
+    return rows;
+};
+
+User.checkName = async function (name) {
+    const rows = asyncQuery(
         `SELECT SQL_NO_CACHE name FROM users WHERE name = ?`,
         [name],
-        function (err, res) {
-            if (err) {
-                console.log("error: ", err);
-                result(err, null);
-            }
-            else {
-                result(null, res);
-            }
-        }
     );
+
+    return rows;
 };
+
+User.register = async function (userData) {
+    const { email, password, fullName, name } = userData;
+
+    const rows = asyncQuery(
+        `INSERT INTO users (login, password, full_name, name) VALUES (?, ?, ?, ?)`,
+        [email, password, fullName, name],
+    );
+
+    return rows;
+};
+
 
 module.exports = User;

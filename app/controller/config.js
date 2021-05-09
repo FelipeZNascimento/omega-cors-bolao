@@ -1,6 +1,6 @@
-// const Cookies = require('../model/cookies.js');
 const DefaultConfig = require('../const/defaultConfig.js');
 const Season = require('../model/season.js');
+const Team = require('../model/team.js');
 
 exports.default = function (req, res) {
     const season = DefaultConfig.seasonId;
@@ -13,15 +13,26 @@ exports.default = function (req, res) {
             if (err) {
                 res.status(400).send(err);
             } else {
-                const seasonInfo = {
-                    currentSeason: response[0].id,
-                    currentWeek: DefaultConfig.currentWeek,
-                    loggedUser: req.session.user
-                };
+                Team.getAll(
+                    function (err, teams) {
+                        if (err) {
+                            res.status(400).send(err);
+                        } else {
+                            const teamsByConferenceAndDivision = Team.byConferenceAndDivision(teams);
 
-                res.send(seasonInfo);
+                            const seasonInfo = {
+                                currentSeason: response[0].id,
+                                currentWeek: DefaultConfig.currentWeek,
+                                loggedUser: req.session.user,
+                                teams: teams,
+                                teamsByConferenceAndDivision: teamsByConferenceAndDivision
+                            };
+
+                            res.send(seasonInfo);
+                        }
+                    }
+                );
             }
         }
     );
-
 };
