@@ -43,7 +43,7 @@ User.getBySeason = async function (season) {
 
 User.getById = async function (id) {
     const rows = asyncQuery(
-        `SELECT SQL_NO_CACHE users.id, users.login, users.name, users.full_name,
+        `SELECT SQL_NO_CACHE users.id, users.login as email, users.name, users.full_name as fullName,
         users_icon.icon, users_icon.color
         FROM users
         LEFT JOIN users_icon ON users.id = users_icon.id_user
@@ -88,14 +88,14 @@ User.login = async function (season, userData) {
     return rows;
 };
 
-User.updateInfo = async function (userData) {
-    const { id, name, fullName, email } = userData;
+User.updateInfo = async function (id, userData) {
+    const { name, fullName, email } = userData;
 
     const rows = asyncQuery(
         `UPDATE users 
         SET name =  ?,
         full_name = ?, 
-        login = ? 
+        login = ?
         WHERE id = ?`,
         [name, fullName, email, id],
     );
@@ -103,19 +103,32 @@ User.updateInfo = async function (userData) {
     return rows;
 };
 
-User.checkEmail = async function (email) {
+User.updatePassword = async function (id, userData) {
+    const { password, newPassword } = userData;
+
     const rows = asyncQuery(
-        `SELECT SQL_NO_CACHE login FROM users WHERE login = ?`,
-        [email]
+        `UPDATE users 
+        SET password = ?,
+        WHERE id = ? AND password = ?`,
+        [newPassword, id, password]
     );
 
     return rows;
 };
 
-User.checkName = async function (name) {
+User.checkEmail = async function (email, loggedUserId) {
     const rows = asyncQuery(
-        `SELECT SQL_NO_CACHE name FROM users WHERE name = ?`,
-        [name],
+        `SELECT SQL_NO_CACHE login FROM users WHERE login = ? AND id != ?`,
+        [email, loggedUserId]
+    );
+
+    return rows;
+};
+
+User.checkName = async function (name, loggedUserId) {
+    const rows = asyncQuery(
+        `SELECT SQL_NO_CACHE name FROM users WHERE name = ? AND id != ?`,
+        [name, loggedUserId]
     );
 
     return rows;
