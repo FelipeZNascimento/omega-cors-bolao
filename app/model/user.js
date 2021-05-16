@@ -56,8 +56,8 @@ User.getById = async function (id) {
 
 User.setIcons = async function (id, icon, color) {
     const rows = asyncQuery(
-        `INSERT INTO users_icon (id_user, icon, color) VALUES (?, ?, ?)`,
-        [id, icon, color],
+        `INSERT INTO users_icon (id_user, icon, color) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE icon = ?, color = ?`,
+        [id, icon, color, icon, color],
     );
 
     return rows;
@@ -93,7 +93,7 @@ User.updateInfo = async function (id, userData) {
 
     const rows = asyncQuery(
         `UPDATE users 
-        SET name =  ?,
+        SET name = ?,
         full_name = ?, 
         login = ?
         WHERE id = ?`,
@@ -108,8 +108,9 @@ User.updatePassword = async function (id, userData) {
 
     const rows = asyncQuery(
         `UPDATE users 
-        SET password = ?,
-        WHERE id = ? AND password = ?`,
+        SET password = ?
+        WHERE id = ?
+        AND password = ?`,
         [newPassword, id, password]
     );
 
