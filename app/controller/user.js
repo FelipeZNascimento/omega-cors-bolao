@@ -28,7 +28,7 @@ async function checkExistingValues(email, name, logedUserId = null) {
     return errorMessage;
 }
 
-exports.update = async function (req, res) {
+exports.updatePreferences = async function (req, res) {
     const userData = new User(req.body);
 
     try {
@@ -38,10 +38,38 @@ exports.update = async function (req, res) {
 
         const { user } = req.session;
 
+        await User.setIcons(user.id, userData.icon, userData.color)
+            .then(async () => {
+                await User.getById(user.id)
+                    .then((user) => {
+                        const newUser = new User(user[0]);
+                        req.session.user = newUser;
+                        const returnObject = {
+                            user: newUser
+                        }
+                        res.send(returnObject);
+                    })
+            })
+
+    } catch (err) {
+        console.log(err);
+        res.status(400).send(err.message);
+    }
+};
+
+exports.update = async function (req, res) {
+    const userData = new User(req.body);
+
+    try {
+        if (!req.session.user) {
+            throw new Error('No live session');
+        };
+
         if (!validateEmail(userData.email)) {
             throw new Error('Invalid email');
         }
 
+        const { user } = req.session;
         const checkResult = await checkExistingValues(userData.email, userData.name, user.id);
 
         if (checkResult !== '') {
@@ -50,6 +78,9 @@ exports.update = async function (req, res) {
 
         if (userData.name === '') {
             userData.name = user.name;
+        }
+        if (userData.email === '') {
+            userData.email = user.email;
         }
 
         const allQueries = [
@@ -74,7 +105,12 @@ exports.update = async function (req, res) {
             .then((user) => {
                 const newUser = new User(user[0]);
                 req.session.user = newUser;
-                res.send(newUser);
+                const returnObject = {
+                    user: newUser,
+                    changedUser: allResults[0].value.changedRows,
+                    changedPassword: allResults.length > 1 ? allResults[1].value.affectedRows : false
+                }
+                res.send(returnObject);
             })
 
     } catch (err) {

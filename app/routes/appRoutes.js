@@ -31,6 +31,9 @@ module.exports = function (app) {
     app.route('/bolaonfl/user/update/')
         .post(userController.update)
 
+    app.route('/bolaonfl/user/updatePreferences/')
+        .post(userController.updatePreferences)
+
     app.route('/bolaonfl/user/register/')
         .post(userController.register)
 
