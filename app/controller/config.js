@@ -1,38 +1,45 @@
 const DefaultConfig = require('../const/defaultConfig.js');
 const Season = require('../model/season.js');
 const Team = require('../model/team.js');
+const SEASON_MAPPING = require('../const/seasonMapping');
 
-exports.default = function (req, res) {
-    const season = DefaultConfig.seasonId;
+exports.default = async function (req, res) {
+    const currentSeason = DefaultConfig.seasonId;
+    const seasonStart = process.env.SEASON_START;
 
-    Season.getInfo(
-        season > 2000
-            ? SEASON_MAPPING[season]
-            : season,
-        function (err, response) {
-            if (err) {
-                res.status(400).send(err);
-            } else {
-                Team.getAll(
-                    function (err, teams) {
-                        if (err) {
-                            res.status(400).send(err);
-                        } else {
-                            const teamsByConferenceAndDivision = Team.byConferenceAndDivision(teams);
+    try {
+        const allQueries = [
+            Season.getInfo(currentSeason),
+            Team.getAll()
+        ];
 
-                            const seasonInfo = {
-                                currentSeason: response[0].id,
-                                currentWeek: DefaultConfig.currentWeek,
-                                loggedUser: req.session.user,
-                                teams: teams,
-                                teamsByConferenceAndDivision: teamsByConferenceAndDivision
-                            };
+        const allResults = await Promise.allSettled(allQueries);
+        const errors = allResults
+            .filter(p => p.status === 'rejected')
+            .map(p => p.reason);
 
-                            res.send(seasonInfo);
-                        }
-                    }
-                );
-            }
+        if (errors.length > 0) {
+            const errorMessage = errors.map((error) => error);
+            throw new Error(errorMessage);
         }
-    );
+
+        const seasonInfo = allResults[0].value[0];
+        const teams = allResults[1].value;
+        const teamsByConferenceAndDivision = Team.byConferenceAndDivision(teams);
+
+        const configData = {
+            currentSeason: seasonInfo.id,
+            currentWeek: DefaultConfig.currentWeek,
+            loggedUser: req.session.user,
+            seasonStart,
+            teams,
+            teamsByConferenceAndDivision: teamsByConferenceAndDivision
+        };
+
+        res.send(configData);
+
+    } catch (err) {
+        console.log(err);
+        res.status(400).send(err.message);
+    }
 };

@@ -1,4 +1,9 @@
+const { promisify } = require('util');
 var sql = require('../../sql/sql');
+
+// node native promisify
+const asyncQuery = promisify(sql.query).bind(sql);
+
 
 var Match = function (match) {
     this.match = match.match;
@@ -16,7 +21,23 @@ var Match = function (match) {
     this.possession = match.possession;
 };
 
-const now = new Date();
+Match.getById = async function (season) {
+    const rows = asyncQuery(
+        `SELECT SQL_NO_CACHE matches.id, matches.timestamp, matches.week, matches.id_season as season, matches.status, matches.possession,
+        matches.away_points as awayScore, matches.home_points as homeScore,
+        teamHome.name AS teamHome, teamHome.alias AS teamHomeAlias, teamHome.id AS idTeamHome, 
+        teamHome.code AS teamHomeCode, teamHome.background AS teamHomeBackground, teamHome.foreground AS teamHomeForeground, 
+        teamAway.name AS teamAway, teamAway.alias AS teamAwayAlias, teamAway.id AS idTeamAway,
+        teamAway.code AS teamAwayCode, teamAway.background AS teamAwayBackground, teamAway.foreground AS teamAwayForeground
+        FROM matches
+        INNER JOIN teams as teamHome 		ON matches.id_home_team = teamHome.id
+        INNER JOIN teams as teamAway 		ON matches.id_away_team = teamAway.id
+        WHERE matches.id = ?`,
+        [season]
+    );
+
+    return rows;
+};
 
 Match.getBySeason = function (season, result) {
     sql.query(

@@ -1,47 +1,71 @@
 const Bets = require('../model/bets.js');
 const Match = require('../model/match.js');
-const Teams = require('../model/team.js');
+const SEASON_MAPPING = require('../const/seasonMapping');
 
-exports.listExtraBets = function (req, res) {
+exports.listExtraBets = async function (req, res) {
     const { season } = req.params;
+    const { user } = req.session;
 
-    Bets.extraBets(
-        season > 2000
-            ? SEASON_MAPPING[season]
-            : season,
-        function (err, extraBets) {
-            if (err) {
-                res.status(400).send(err);
-            } else {
-                let extraBetsResults = null;
-                let extraBetsUsers = null;
+    if (!user) {
+        throw new Error('No live session');
+    }
 
-                if (extraBets.results.length > 0) {
-                    extraBetsResults = JSON.parse(extraBets.results[0].json);
-                }
+    const nowTimestamp = new Date().getTime();
+    const seasonStart = process.env.SEASON_START;
 
-                if (extraBets.bets.length > 0) {
-                    extraBetsUsers = extraBets.bets.map((extraBet) => {
-                        return ({
-                            userId: extraBet.idUser,
-                            username: extraBet.userName,
-                            icon: extraBet.userIcon,
-                            color: extraBet.userColor,
-                            bets: JSON.parse(extraBet.json)
-                        })
-                    });
-                }
+    const normalizedSeason = season > 2000
+        ? SEASON_MAPPING[season]
+        : season;
 
-                const dataObject = {
-                    season,
-                    results: extraBetsResults,
-                    bets: extraBetsUsers
-                };
+    const allQueries = [
+        Bets.userExtraBets(normalizedSeason, user.id)
+    ];
 
-                res.send(dataObject);
-            }
+    if (nowTimestamp >= seasonStart) {
+        allQueries.push(Bets.extraBetsResults(normalizedSeason));
+        allQueries.push(Bets.extraBets(normalizedSeason));
+    }
+
+    const allResults = await Promise.allSettled(allQueries);
+    const errors = allResults
+        .filter(p => p.status === 'rejected')
+        .map(p => p.reason);
+
+    if (errors.length > 0) {
+        const errorMessage = errors.map((error) => error);
+        throw new Error(errorMessage);
+    }
+
+    const userExtraBets = allResults[0].value[0] ? JSON.parse(allResults[0].value[0].json) : null;
+    let extraBetsResults = null;
+    let extraBets = [];
+    let extraBetsPerUser = [];
+
+    if (nowTimestamp >= seasonStart) {
+        extraBetsResults = allResults[1].value.length > 0 ? JSON.parse(allResults[0].value[0].json) : null;
+        extraBets = allResults[2].value;
+
+        if (extraBets.bets.length > 0) {
+            extraBetsPerUser = extraBets.bets.map((extraBet) => {
+                return ({
+                    userId: extraBet.idUser,
+                    username: extraBet.userName,
+                    icon: extraBet.userIcon,
+                    color: extraBet.userColor,
+                    bets: JSON.parse(extraBet.json)
+                })
+            });
         }
-    );
+    }
+
+    const dataObject = {
+        season,
+        results: extraBetsResults,
+        bets: extraBetsPerUser,
+        userBets: userExtraBets
+    };
+
+    res.send(dataObject);
 };
 
 exports.listBetsBySeasonAndWeek = function (req, res) {
@@ -136,4 +160,66 @@ exports.listBetsBySeasonAndWeek = function (req, res) {
             }
         }
     );
+};
+
+exports.updateExtraBets = async function (req, res) {
+    console.log('Updating extra bet...');
+    const newExtraBets = req.body;
+    const nowTimestamp = new Date().getTime();
+    const season = process.env.SEASON;
+    const seasonStart = process.env.SEASON_START;
+
+    const normalizedSeason = season > 2000
+        ? SEASON_MAPPING[season]
+        : season;
+
+    try {
+        if (!req.session.user) {
+            throw new Error('No live session');
+        };
+
+        if (nowTimestamp >= seasonStart) {
+            throw new Error('Season already started, update extraBets not allowed');
+        }
+
+        const { user } = req.session;
+
+        await Bets.updateExtras(user.id, normalizedSeason, JSON.stringify(newExtraBets))
+            .then(async (result) => {
+                res.send(result);
+            })
+
+    } catch (err) {
+        console.log(err);
+        res.status(400).send(err.message);
+    }
+};
+
+exports.updateRegularBets = async function (req, res) {
+    console.log('Updating regular bet...');
+    const nowTimestamp = Math.floor(new Date().getTime() / 1000);
+
+    try {
+        const betData = new Bets(req.body);
+        if (!req.session.user) {
+            throw new Error('No live session');
+        };
+
+        const { user } = req.session;
+
+        await Match.getById(betData.matchId)
+            .then(async (match) => {
+                if (match.length > 0 && nowTimestamp >= match[0].timestamp) {
+                    throw new Error('Season already started, update extraBets not allowed');
+                } else {
+                    await Bets.updateRegular(betData.matchId, user.id, betData.betValue)
+                        .then(async (result) => {
+                            res.send(result);
+                        })
+                }
+            })
+    } catch (err) {
+        console.log(err);
+        res.status(400).send(err.message);
+    }
 };
