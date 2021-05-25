@@ -10,7 +10,7 @@ exports.listExtraBets = async function (req, res) {
         throw new Error('No live session');
     }
 
-    const nowTimestamp = new Date().getTime();
+    const nowTimestamp = Math.floor(new Date().getTime() / 1000);
     const seasonStart = process.env.SEASON_START;
 
     const normalizedSeason = season > 2000
@@ -45,8 +45,8 @@ exports.listExtraBets = async function (req, res) {
         extraBetsResults = allResults[1].value.length > 0 ? JSON.parse(allResults[0].value[0].json) : null;
         extraBets = allResults[2].value;
 
-        if (extraBets.bets.length > 0) {
-            extraBetsPerUser = extraBets.bets.map((extraBet) => {
+        if (extraBets.length > 0) {
+            extraBetsPerUser = extraBets.map((extraBet) => {
                 return ({
                     userId: extraBet.idUser,
                     username: extraBet.userName,
@@ -165,7 +165,7 @@ exports.listBetsBySeasonAndWeek = function (req, res) {
 exports.updateExtraBets = async function (req, res) {
     console.log('Updating extra bet...');
     const newExtraBets = req.body;
-    const nowTimestamp = new Date().getTime();
+    const nowTimestamp = Math.floor(new Date().getTime() / 1000);
     const season = process.env.SEASON;
     const seasonStart = process.env.SEASON_START;
 
