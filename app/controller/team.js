@@ -1,11 +1,9 @@
 const Team = require('../model/team.js');
 
-exports.listAll = function (req, res) {
-    Team.getAll(
-        function (err, teams) {
-            if (err) {
-                res.status(400).send(err);
-            } else {
+exports.listAll = async function (req, res) {
+    try {
+        await Team.getAll()
+            .then((teams) => {
                 const teamsByConferenceAndDivision = Team.byConferenceAndDivision(teams);
 
                 const dataObject = {
@@ -14,7 +12,9 @@ exports.listAll = function (req, res) {
                 };
 
                 res.send(dataObject);
-            }
-        }
-    );
+            })
+    } catch (err) {
+        console.log(err);
+        res.status(400).send(err.message);
+    }
 };

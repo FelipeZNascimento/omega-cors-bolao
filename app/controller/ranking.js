@@ -4,6 +4,7 @@ const User = require('../model/user.js');
 const Match = require('../model/match.js');
 const MaxPointsPerBet = require('../const/maxPointsPerBet');
 const EXTRA_BETS_MAPPING = require('../const/extraBetsMapping');
+const SEASON_MAPPING = require('../const/seasonMapping');
 
 const calculateUserExtraPoints = (user, extraBets, extraBetsResults) => {
     let extraBetsPoints = 0;
