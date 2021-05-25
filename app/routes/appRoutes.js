@@ -58,9 +58,12 @@ module.exports = function (app) {
         .get(rankingController.listBySeasonAndWeek)
 
     // Bets
+    app.route('/bolaonfl/bets/update/extras/')
+        .post(betsController.updateExtraBets)
+    app.route('/bolaonfl/bets/update/regular/')
+        .post(betsController.updateRegularBets)
     app.route('/bolaonfl/bets/extras/:season/')
         .get(betsController.listExtraBets)
-
     app.route('/bolaonfl/bets/:season/:week')
         .get(betsController.listBetsBySeasonAndWeek)
 
