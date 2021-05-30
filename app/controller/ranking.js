@@ -9,12 +9,12 @@ const SEASON_MAPPING = require('../const/seasonMapping');
 const calculateUserExtraPoints = (user, extraBets, extraBetsResults) => {
     let extraBetsPoints = 0;
     if (extraBets === null || extraBetsResults === null) {
-        return extraBetsPoints;
+        return 0;
     }
 
     const userExtraBets = extraBets.find((extraBet) => extraBet.idUser === user.id);
     if (userExtraBets === undefined) {
-        return extraBetsPoints;
+        return 0;
     }
 
     const bets = JSON.parse(userExtraBets.json);
@@ -124,68 +124,64 @@ exports.listBySeasonAndWeek = async function (req, res) {
 
 exports.listBySeason = async function (req, res) {
     const { season } = req.params;
+    const normalizedSeason = season > 2000
+        ? SEASON_MAPPING[season]
+        : season;
 
-    Match.getBySeason(
-        season > 2000
-            ? SEASON_MAPPING[season]
-            : season,
-        async function (err, matches) {
-            if (err) {
-                res.status(400).send(err);
-            } else {
-                Bets.byMatchIds(
-                    matches.map((match) => match.id),
-                    async function (err, bets) {
-                        if (err) {
-                            res.status(400).send(err);
-                        } else {
-                            await User.getBySeason(season)
-                                .then((users) => {
-                                    Bets.extraBets(
-                                        season > 2000
-                                            ? SEASON_MAPPING[season]
-                                            : season,
-                                        function (err, extraBets) {
-                                            if (err) {
-                                                res.status(400).send(err);
-                                            } else {
-                                                let extraBetsResults = null;
-                                                let extraBetsUsers = null;
+    try {
+        const allQueries = [
+            Match.getBySeason(normalizedSeason),
+            User.getBySeason(normalizedSeason),
+            Bets.extraBets(normalizedSeason),
+            Bets.extraBetsResults(normalizedSeason)
+        ];
 
-                                                if (extraBets.results.length > 0) {
-                                                    extraBetsResults = JSON.parse(extraBets.results[0].json);
-                                                    extraBetsUsers = extraBets.bets;
-                                                }
+        const allResults = await Promise.allSettled(allQueries);
+        const errors = allResults
+            .filter(p => p.status === 'rejected')
+            .map(p => p.reason);
 
-                                                const totalPossiblePoints = matches.reduce((acumulator, match) =>
-                                                    acumulator + MaxPointsPerBet.RegularSeason(parseInt(season), parseInt(match.week))
-                                                    , 0);
-
-                                                const usersObject = users.map((user) => {
-                                                    const totalExtras = calculateUserExtraPoints(user, extraBetsUsers, extraBetsResults);
-                                                    const userObject = calculateUserPoints(user, matches, bets, totalPossiblePoints);
-
-                                                    userObject.totalPoints += totalExtras;
-                                                    userObject.totalExtras = totalExtras;
-
-                                                    return userObject;
-                                                });
-
-                                                const dataObject = {
-                                                    season: season,
-                                                    totalPossiblePoints,
-                                                    users: usersObject.sort((a, b) => b.totalPoints - a.totalPoints || b.totalBullseye - a.totalBullseye)
-                                                };
-
-                                                res.send(dataObject);
-                                            }
-                                        }
-                                    )
-                                });
-                        }
-                    }
-                )
-            }
+        if (errors.length > 0) {
+            const errorMessage = errors.map((error) => error);
+            throw new Error(errorMessage);
         }
-    );
+
+        const matches = allResults[0].value;
+        const users = allResults[1].value;
+        const extraBets = allResults[2].value;
+        const extraBetsResults = allResults[3].value.length > 0 ? JSON.parse(allResults[3].value[0].json) : null;
+
+        Bets.byMatchIds(
+            matches.map((match) => match.id),
+            async function (err, bets) {
+                if (err) {
+                    res.status(400).send(err);
+                } else {
+                    const totalPossiblePoints = matches.reduce((acumulator, match) =>
+                        acumulator + MaxPointsPerBet.RegularSeason(parseInt(normalizedSeason), parseInt(match.week))
+                        , 0);
+
+                    const usersObject = users.map((user) => {
+                        const totalExtras = calculateUserExtraPoints(user, extraBets, extraBetsResults);
+                        const userObject = calculateUserPoints(user, matches, bets, totalPossiblePoints);
+
+                        userObject.totalPoints += totalExtras;
+                        userObject.totalExtras = totalExtras;
+
+                        return userObject;
+                    });
+
+                    const dataObject = {
+                        season: normalizedSeason,
+                        totalPossiblePoints,
+                        users: usersObject.sort((a, b) => b.totalPoints - a.totalPoints || b.totalBullseye - a.totalBullseye)
+                    };
+
+                    res.send(dataObject);
+                }
+            });
+    } catch (err) {
+        console.log(err);
+        res.status(400).send(err.message);
+    };
 };

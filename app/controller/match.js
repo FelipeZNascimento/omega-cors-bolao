@@ -3,38 +3,37 @@ const Bets = require('../model/bets.js');
 const Sort = require('../utilities/sort');
 const SEASON_MAPPING = require('../const/seasonMapping');
 
-exports.listBySeason = function (req, res) {
+exports.listBySeason = async function (req, res) {
     console.log('Routing to match listBySeason');
     const { season } = req.params;
+    const normalizedSeason = season > 2000
+        ? SEASON_MAPPING[season]
+        : season;
 
-    Match.getBySeason(
-        season > 2000
-            ? SEASON_MAPPING[season]
-            : season,
-        function (err, task) {
-            if (err) {
-                res.status(400).send(err);
-            } else {
-                res.send(task);
-            }
-        }
-    );
+    try {
+        await Match.getBySeason(normalizedSeason)
+            .then(async (matches) => {
+                res.send(matches);
+            })
+    } catch (err) {
+        console.log(err);
+        res.status(400).send(err.message);
+    }
 };
 
-exports.listByWeek = function (req, res) {
+exports.listByWeek = async function (req, res) {
     console.log('Routing to match listByWeek');
     const { week } = req.params;
 
-    Match.getByWeek(
-        week,
-        function (err, task) {
-            if (err) {
-                res.status(400).send(err);
-            } else {
-                res.send(task);
-            }
-        }
-    );
+    try {
+        await Match.getByWeek(week)
+            .then(async (matches) => {
+                res.send(matches);
+            })
+    } catch (err) {
+        console.log(err);
+        res.status(400).send(err.message);
+    }
 };
 
 exports.list = function (req, res) {
