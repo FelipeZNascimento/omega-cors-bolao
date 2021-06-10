@@ -67,5 +67,9 @@ module.exports = function (app) {
     app.route('/bolaonfl/bets/:season/:week')
         .get(betsController.listBetsBySeasonAndWeek)
 
+    // Records Routing
+    app.route('/bolaonfl/records/')
+        .post(rankingController.listRecords)
+
 };
 
