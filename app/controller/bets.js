@@ -42,7 +42,7 @@ exports.listExtraBets = async function (req, res) {
     let extraBetsPerUser = [];
 
     if (nowTimestamp >= seasonStart) {
-        extraBetsResults = allResults[1].value.length > 0 ? JSON.parse(allResults[0].value[0].json) : null;
+        extraBetsResults = allResults[1].value.length > 0 ? JSON.parse(allResults[1].value[0].json) : null;
         extraBets = allResults[2].value;
 
         if (extraBets.length > 0) {
@@ -183,7 +183,6 @@ exports.updateExtraBets = async function (req, res) {
         }
 
         const { user } = req.session;
-
         await Bets.updateExtras(user.id, normalizedSeason, JSON.stringify(newExtraBets))
             .then(async (result) => {
                 res.send(result);

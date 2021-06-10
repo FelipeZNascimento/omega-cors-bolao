@@ -73,6 +73,40 @@ const calculateUserPoints = (user, matches, bets, totalPossiblePoints) => {
     })
 }
 
+exports.listRecords = async function (req, res) {
+    let { accumulated, orderBy, sortAsc, season, week, userId } = req.body;
+
+    try {
+        let normalizedSeason = season;
+        if (season !== null) {
+            normalizedSeason = season > 2000
+                ? SEASON_MAPPING[season]
+                : season;
+        }
+
+
+        if (accumulated) {
+            await Ranking.getCheckpoints(normalizedSeason, week, userId)
+                .then((records) => {
+                    res.send(records);
+                })
+        } else {
+            if (!Ranking.sortableColumns.includes(orderBy)) {
+                orderBy = Ranking.sortableColumns[0];
+            }
+
+            await Ranking.getRecords(orderBy, sortAsc, normalizedSeason, week, userId)
+                .then((records) => {
+                    res.send(records);
+                })
+        }
+
+    } catch (err) {
+        console.log(err);
+        res.status(400).send(err.message);
+    }
+}
+
 exports.listBySeasonAndWeek = async function (req, res) {
     const { season, week } = req.params;
 
