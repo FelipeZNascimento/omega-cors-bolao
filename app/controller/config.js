@@ -1,6 +1,7 @@
 const DefaultConfig = require('../const/defaultConfig.js');
 const Season = require('../model/season.js');
 const Team = require('../model/team.js');
+const User = require('../model/user.js');
 const SEASON_MAPPING = require('../const/seasonMapping');
 
 exports.default = async function (req, res) {
@@ -26,6 +27,10 @@ exports.default = async function (req, res) {
         const seasonInfo = allResults[0].value[0];
         const teams = allResults[1].value;
         const teamsByConferenceAndDivision = Team.byConferenceAndDivision(teams);
+
+        if (req.session.user) {
+            User.updateLastOnlineTime(req.session.user.id);
+        }
 
         const configData = {
             currentSeason: seasonInfo.id,

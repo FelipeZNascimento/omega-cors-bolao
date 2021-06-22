@@ -47,6 +47,7 @@ exports.updatePreferences = async function (req, res) {
                         const returnObject = {
                             user: newUser
                         }
+                        User.updateLastOnlineTime(newUser.id);
                         res.send(returnObject);
                     })
             })
@@ -110,6 +111,8 @@ exports.update = async function (req, res) {
                     changedUser: allResults[0].value.changedRows,
                     changedPassword: allResults.length > 1 ? allResults[1].value.affectedRows : false
                 }
+
+                User.updateLastOnlineTime(newUser.id);
                 res.send(returnObject);
             })
 
@@ -181,6 +184,8 @@ exports.register = async function register(req, res) {
                         if (loginResult.length > 0) {
                             const newUser = new User(loginResult[0]);
                             req.session.user = newUser
+
+                            User.updateLastOnlineTime(newUser.id);
                             res.send(newUser);
                         } else {
                             res.send(null);
@@ -208,6 +213,8 @@ exports.login = async function (req, res) {
         await User.login(season, userData)
             .then((loginResult) => {
                 if (loginResult.length > 0) {
+                    User.updateLastOnlineTime(loginResult[0].id);
+
                     req.session.user = new User(loginResult[0]);
                     res.send(loginResult[0]);
                 } else {

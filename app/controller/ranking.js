@@ -61,7 +61,14 @@ const calculateUserPoints = (user, matches, bets, totalPossiblePoints) => {
 
     const totalPercentage = (totalPoints / totalPossiblePoints) * 100;
 
+    const fiveMinAgo = Date.now() - (1000 * 60 * 5);
+    let isOnline = false;
+    if (new Date(user.timestamp).getTime() >= fiveMinAgo) {
+        isOnline = true;
+    }
+
     return ({
+        isOnline,
         id: user.id,
         name: user.name,
         icon: user.icon,
@@ -74,7 +81,7 @@ const calculateUserPoints = (user, matches, bets, totalPossiblePoints) => {
 }
 
 exports.listRecords = async function (req, res) {
-    let { accumulated, orderBy, sortAsc, season, week, userId } = req.body;
+    let { accumulated, limit, orderBy, sortAsc, season, week, userId } = req.body;
 
     try {
         let normalizedSeason = season;
@@ -83,7 +90,6 @@ exports.listRecords = async function (req, res) {
                 ? SEASON_MAPPING[season]
                 : season;
         }
-
 
         if (accumulated) {
             await Ranking.getCheckpoints(normalizedSeason, week, userId)
@@ -95,7 +101,7 @@ exports.listRecords = async function (req, res) {
                 orderBy = Ranking.sortableColumns[0];
             }
 
-            await Ranking.getRecords(orderBy, sortAsc, normalizedSeason, week, userId)
+            await Ranking.getRecords(orderBy, sortAsc, limit, normalizedSeason, week, userId)
                 .then((records) => {
                     res.send(records);
                 })
@@ -133,6 +139,10 @@ exports.listBySeasonAndWeek = async function (req, res) {
                                             , 0);
 
                                         const usersObject = users.map((user) => calculateUserPoints(user, matches, bets, totalPossiblePoints));
+                                        const fiveMinAgo = Math.floor(Date.now() / 1000) - (60 * 5);
+                                        // if(users.timestamp >= fiveMinAgo) {
+
+                                        // }
 
                                         const dataObject = {
                                             season: season,

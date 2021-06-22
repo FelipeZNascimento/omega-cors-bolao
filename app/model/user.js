@@ -30,11 +30,12 @@ User.getAll = async function () {
 User.getBySeason = async function (season) {
     const rows = asyncQuery(
         `SELECT SQL_NO_CACHE users.id, users.login as email, users.name, users.full_name as fullName,
-        users_icon.icon, users_icon.color,
+        users_icon.icon, users_icon.color, users_online.timestamp,
         users_season.id AS seasonId
         FROM users
         INNER JOIN users_season ON users.id = users_season.id_user AND users_season.id_season = ?
-        LEFT JOIN users_icon ON users.id = users_icon.id_user`,
+        LEFT JOIN users_icon ON users.id = users_icon.id_user
+        LEFT JOIN users_online ON users.id = users_online.id_user`,
         [season],
     );
 
@@ -146,5 +147,13 @@ User.register = async function (userData) {
     return rows;
 };
 
+User.updateLastOnlineTime = async function (id) {
+    const rows = asyncQuery(
+        `INSERT INTO users_online (id_user) VALUES (?) ON DUPLICATE KEY UPDATE timestamp = NOW()`,
+        [id],
+    );
+
+    return rows;
+}
 
 module.exports = User;

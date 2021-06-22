@@ -1,5 +1,6 @@
 const Bets = require('../model/bets.js');
 const Match = require('../model/match.js');
+const User = require('../model/user.js');
 const SEASON_MAPPING = require('../const/seasonMapping');
 
 exports.listExtraBets = async function (req, res) {
@@ -65,20 +66,21 @@ exports.listExtraBets = async function (req, res) {
         userBets: userExtraBets
     };
 
+    User.updateLastOnlineTime(user.id);
     res.send(dataObject);
 };
 
 exports.listBetsBySeasonAndWeek = function (req, res) {
     console.log('Routing to match list');
-    const session = req.session;
-
-    if (!session.user) {
+    
+    if (!req.session.user) {
         return res.status(400).send('No live session');
     }
 
+    const { user } = req.session;
     const { season, week } = req.params;
-    const sessionUser = req.session.user === undefined ? null : req.session.user;
-    const sessionUserId = req.session.user === undefined ? null : req.session.user.id;
+    const sessionUser = user === undefined ? null : user;
+    const sessionUserId = user === undefined ? null : user.id;
 
     Match.getBySeasonAndWeek(
         season > 2000
@@ -152,6 +154,7 @@ exports.listBetsBySeasonAndWeek = function (req, res) {
                                 matches: matchesObject
                             };
 
+                            User.updateLastOnlineTime(user.id);
                             res.send(dataObject);
                         }
                     }
@@ -185,6 +188,7 @@ exports.updateExtraBets = async function (req, res) {
         const { user } = req.session;
         await Bets.updateExtras(user.id, normalizedSeason, JSON.stringify(newExtraBets))
             .then(async (result) => {
+                User.updateLastOnlineTime(user.id);
                 res.send(result);
             })
 
@@ -213,6 +217,7 @@ exports.updateRegularBets = async function (req, res) {
                 } else {
                     await Bets.updateRegular(betData.matchId, user.id, betData.betValue)
                         .then(async (result) => {
+                            User.updateLastOnlineTime(user.id);
                             res.send(result);
                         })
                 }
