@@ -61,9 +61,9 @@ const calculateUserPoints = (user, matches, bets, totalPossiblePoints) => {
 
     const totalPercentage = (totalPoints / totalPossiblePoints) * 100;
 
-    const fiveMinAgo = Date.now() - (1000 * 60 * 5);
+    const fiveMinAgo = Math.floor(Date.now() / 1000) - (60 * 5);
     let isOnline = false;
-    if (new Date(user.timestamp).getTime() >= fiveMinAgo) {
+    if (user.timestamp >= fiveMinAgo) {
         isOnline = true;
     }
 

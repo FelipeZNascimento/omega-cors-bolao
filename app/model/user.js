@@ -30,7 +30,7 @@ User.getAll = async function () {
 User.getBySeason = async function (season) {
     const rows = asyncQuery(
         `SELECT SQL_NO_CACHE users.id, users.login as email, users.name, users.full_name as fullName,
-        users_icon.icon, users_icon.color, users_online.timestamp,
+        users_icon.icon, users_icon.color, unix_timestamp(users_online.timestamp) as timestamp,
         users_season.id AS seasonId
         FROM users
         INNER JOIN users_season ON users.id = users_season.id_user AND users_season.id_season = ?
