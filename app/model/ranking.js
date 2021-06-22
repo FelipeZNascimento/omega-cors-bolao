@@ -63,13 +63,15 @@ Ranking.returnPoints = (match, betValue, maxPoints) => {
     return 0;
 };
 
-Ranking.getRecords = async function (orderBy, sortAsc, season, week, userId) {
+Ranking.getRecords = async function (orderBy, sortAsc, limit, season, week, userId) {
     let baseQuery =
         `SELECT ranking_weekly.userId, ranking_weekly.seasonId, ranking_weekly.week, ranking_weekly.points,
         ranking_weekly.bullseye, ranking_weekly.winners, ranking_weekly.percentage, ranking_weekly.numOfBets, ranking_weekly.numOfGames,
-        users.name as userName, users_icon.icon as userIcon, users_icon.color as userColor
+        users.name as userName, users_icon.icon as userIcon, users_icon.color as userColor,
+        seasons.description as season
         FROM ranking_weekly
         INNER JOIN users 		ON users.id = ranking_weekly.userId
+        INNER JOIN seasons 		ON seasons.id = ranking_weekly.seasonId
         LEFT JOIN users_icon    ON users_icon.id_user = ranking_weekly.userId
         WHERE numOfBets >= 10`;
     const preparedParams = [];
@@ -94,8 +96,8 @@ Ranking.getRecords = async function (orderBy, sortAsc, season, week, userId) {
     const rows = asyncQuery(
         `${baseQuery}
         ORDER BY ?? ${sortAsc ? 'ASC' : 'DESC'}
-        LIMIT 10`,
-        [...preparedParams, orderBy]
+        LIMIT ?`,
+        [...preparedParams, orderBy, limit]
     );
 
     return rows;
