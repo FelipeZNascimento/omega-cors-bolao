@@ -110,9 +110,11 @@ Ranking.getCheckpoints = async function (season, week, userId) {
             SUM(ranking_weekly.bullseye) as bullseye, SUM(ranking_weekly.winners) as winners,
             SUM(ranking_weekly.numOfBets) as numOfBets, SUM(ranking_weekly.numOfGames) as numOfGames,
             SUM(ranking_weekly.numOfGames * ranking_weekly.pointsPerGame) as pointsAvailable,
-            users.name as userName, users_icon.icon as userIcon, users_icon.color as userColor
+            users.name as userName, users_icon.icon as userIcon, users_icon.color as userColor,
+            seasons.description as season
             FROM ranking_weekly
             INNER JOIN users 		ON users.id = ranking_weekly.userId
+            INNER JOIN seasons 		ON seasons.id = ranking_weekly.seasonId
             LEFT JOIN users_icon    ON users_icon.id_user = ranking_weekly.userId
             WHERE week <= ?`;
     const preparedParams = [week];
