@@ -59,7 +59,9 @@ const calculateUserPoints = (user, matches, bets, totalPossiblePoints) => {
         }
     });
 
-    const totalPercentage = (totalPoints / totalPossiblePoints) * 100;
+    const totalPercentage = totalPossiblePoints > 0
+        ? (totalPoints / totalPossiblePoints) * 100
+        : 0;
 
     const fiveMinAgo = Math.floor(Date.now() / 1000) - (60 * 5);
     let isOnline = false;
@@ -205,6 +207,7 @@ exports.listBySeason = async function (req, res) {
                         acumulator + MaxPointsPerBet.RegularSeason(parseInt(normalizedSeason), parseInt(match.week))
                         , 0);
 
+                    console.log(totalPossiblePoints);
                     const usersObject = users.map((user) => {
                         const totalExtras = calculateUserExtraPoints(user, extraBets, extraBetsResults);
                         const userObject = calculateUserPoints(user, matches, bets, totalPossiblePoints);
