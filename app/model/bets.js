@@ -12,8 +12,11 @@ var Bets = function (bet) {
 };
 
 Bets.byMatchIds = function (matchIds, result) {
-    sql.query(
-        `SELECT bets.id, bets.id_bet as betValue, bets.id_user as userId, bets.id_match as matchId,
+    if (matchIds.length === 0) {
+        return result(null, []);
+    } else {
+        sql.query(
+            `SELECT bets.id, bets.id_bet as betValue, bets.id_user as userId, bets.id_match as matchId,
         users.name as userName, users_icon.icon as userIcon, users_icon.color as userColor
         FROM bets
         INNER JOIN matches 		ON matches.id = bets.id_match
@@ -22,16 +25,18 @@ Bets.byMatchIds = function (matchIds, result) {
         WHERE matches.timestamp <= UNIX_TIMESTAMP()
         AND bets.id_match IN (?)
         GROUP BY bets.id_match, bets.id_user`,
-        [matchIds],
-        function (err, res) {
-            if (err) {
-                console.log("error: ", err);
-                result(err, null);
-            }
-            else {
-                result(null, res);
-            }
-        });
+            [matchIds],
+            function (err, res) {
+                if (err) {
+                    console.log("error: ", err);
+                    result(err, null);
+                }
+                else {
+                    result(null, res);
+                }
+            });
+    }
+
 };
 
 Bets.byUserIdAndMatchIds = function (userId, matchIds, result) {
