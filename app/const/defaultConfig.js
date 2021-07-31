@@ -1,6 +1,6 @@
 let config = {
     seasonId: process.env.SEASON,
-    currentWeek: 1
+    currentWeek: 0
 }
 
 module.exports = config;
