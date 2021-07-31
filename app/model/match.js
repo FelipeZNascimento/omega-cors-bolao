@@ -116,7 +116,7 @@ Match.updateFromMatchInfo = function (matchData, season, result) {
             FROM teams
             WHERE code = ?
         )
-        AND week <= 17
+        AND week = ?
         AND id_season = ?`,
         [
             matchData.away_points,
@@ -125,6 +125,7 @@ Match.updateFromMatchInfo = function (matchData, season, result) {
             matchData.possession,
             matchData.away_team_code,
             matchData.home_team_code,
+            matchData.week,
             season
         ],
         function (err, res) {
