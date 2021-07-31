@@ -13,7 +13,7 @@ module.exports = function (app) {
 
     // Matches Routing
     app.route('/bolaonfl/matches/update/:season/:key/')
-        .get(matchController.updateBySeason)
+        .post(matchController.updateBySeason)
 
     app.route('/bolaonfl/matches/season/:season/')
         .get(matchController.listBySeason)

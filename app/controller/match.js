@@ -164,9 +164,7 @@ exports.updateBySeason = function (req, res) {
         User.updateLastOnlineTime(req.session.user.id);
     }
 
-    if (matchData.length === 0) {
-        res.status(400).send({ error: true, message: 'No matches found.' });
-    } else if (key !== process.env.API_UPDATE_KEY) { // Use env variable to check keys
+    if (key !== process.env.API_UPDATE_KEY) { // Use env variable to check keys
         res.status(400).send({ error: true, message: 'Access forbidden.' });
     } else {
         Match.updateFromMatchInfo(
