@@ -1,5 +1,6 @@
 const Match = require('../model/match.js');
 const Bets = require('../model/bets.js');
+const User = require('../model/user.js');
 const Sort = require('../utilities/sort');
 const SEASON_MAPPING = require('../const/seasonMapping');
 

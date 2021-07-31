@@ -207,7 +207,6 @@ exports.listBySeason = async function (req, res) {
                         acumulator + MaxPointsPerBet.RegularSeason(parseInt(normalizedSeason), parseInt(match.week))
                         , 0);
 
-                    console.log(totalPossiblePoints);
                     const usersObject = users.map((user) => {
                         const totalExtras = calculateUserExtraPoints(user, extraBets, extraBetsResults);
                         const userObject = calculateUserPoints(user, matches, bets, totalPossiblePoints);
