@@ -1,6 +1,10 @@
 const Team = require('../model/team.js');
 
 exports.listAll = async function (req, res) {
+    if (req.session.user) {
+        User.updateLastOnlineTime(req.session.user.id);
+    }
+
     try {
         await Team.getAll()
             .then((teams) => {
