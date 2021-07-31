@@ -5,7 +5,6 @@ const Sort = require('../utilities/sort');
 const SEASON_MAPPING = require('../const/seasonMapping');
 
 exports.listBySeason = async function (req, res) {
-    console.log('Routing to match listBySeason');
     const { season } = req.params;
     const normalizedSeason = season > 2000
         ? SEASON_MAPPING[season]
@@ -27,7 +26,6 @@ exports.listBySeason = async function (req, res) {
 };
 
 exports.listByWeek = async function (req, res) {
-    console.log('Routing to match listByWeek');
     const { week } = req.params;
 
     if (req.session.user) {
@@ -46,7 +44,6 @@ exports.listByWeek = async function (req, res) {
 };
 
 exports.list = function (req, res) {
-    console.log('Routing to match list');
     const { season, week } = req.params;
 
     if (req.session.user) {
@@ -156,7 +153,6 @@ exports.list = function (req, res) {
 };
 
 exports.updateBySeason = function (req, res) {
-    console.log('Routing to match updateBySeason');
     const matchData = new Match(req.body);
     const { key, season } = req.params;
 

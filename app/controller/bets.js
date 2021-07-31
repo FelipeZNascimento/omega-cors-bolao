@@ -71,8 +71,6 @@ exports.listExtraBets = async function (req, res) {
 };
 
 exports.listBetsBySeasonAndWeek = function (req, res) {
-    console.log('Routing to match list');
-    
     if (!req.session.user) {
         return res.status(400).send('No live session');
     }
@@ -166,7 +164,6 @@ exports.listBetsBySeasonAndWeek = function (req, res) {
 };
 
 exports.updateExtraBets = async function (req, res) {
-    console.log('Updating extra bet...');
     const newExtraBets = req.body;
     const nowTimestamp = Math.floor(new Date().getTime() / 1000);
     const season = process.env.SEASON;
@@ -199,7 +196,6 @@ exports.updateExtraBets = async function (req, res) {
 };
 
 exports.updateRegularBets = async function (req, res) {
-    console.log('Updating regular bet...');
     const nowTimestamp = Math.floor(new Date().getTime() / 1000);
 
     try {
