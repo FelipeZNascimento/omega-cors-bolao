@@ -10,6 +10,10 @@ exports.listBySeason = async function (req, res) {
         ? SEASON_MAPPING[season]
         : season;
 
+    if (req.session.user) {
+        User.updateLastOnlineTime(req.session.user.id);
+    }
+
     try {
         await Match.getBySeason(normalizedSeason)
             .then(async (matches) => {
@@ -25,6 +29,10 @@ exports.listByWeek = async function (req, res) {
     console.log('Routing to match listByWeek');
     const { week } = req.params;
 
+    if (req.session.user) {
+        User.updateLastOnlineTime(req.session.user.id);
+    }
+
     try {
         await Match.getByWeek(week)
             .then(async (matches) => {
@@ -39,6 +47,10 @@ exports.listByWeek = async function (req, res) {
 exports.list = function (req, res) {
     console.log('Routing to match list');
     const { season, week } = req.params;
+
+    if (req.session.user) {
+        User.updateLastOnlineTime(req.session.user.id);
+    }
 
     Match.getBySeasonAndWeek(
         season > 2000
@@ -146,6 +158,10 @@ exports.updateBySeason = function (req, res) {
     console.log('Routing to match updateBySeason');
     const matchData = new Match(req.body);
     const { key, season } = req.params;
+
+    if (req.session.user) {
+        User.updateLastOnlineTime(req.session.user.id);
+    }
 
     if (matchData.length === 0) {
         res.status(400).send({ error: true, message: 'No product found.' });

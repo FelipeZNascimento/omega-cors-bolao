@@ -37,6 +37,7 @@ exports.updatePreferences = async function (req, res) {
         };
 
         const { user } = req.session;
+        User.updateLastOnlineTime(user.id);
 
         await User.setIcons(user.id, userData.icon, userData.color)
             .then(async () => {
@@ -66,11 +67,13 @@ exports.update = async function (req, res) {
             throw new Error('No live session');
         };
 
+
         if (!validateEmail(userData.email)) {
             throw new Error('Invalid email');
         }
 
         const { user } = req.session;
+        User.updateLastOnlineTime(user.id);
         const checkResult = await checkExistingValues(userData.email, userData.name, user.id);
 
         if (checkResult !== '') {
@@ -123,6 +126,10 @@ exports.update = async function (req, res) {
 };
 
 exports.listAll = async function (req, res) {
+    if (req.session.user) {
+        User.updateLastOnlineTime(req.session.user.id);
+    }
+
     try {
         await User.getAll()
             .then((list) => {
@@ -136,6 +143,9 @@ exports.listAll = async function (req, res) {
 
 exports.listById = async function (req, res) {
     const { id } = req.params;
+    if (req.session.user) {
+        User.updateLastOnlineTime(req.session.user.id);
+    }
 
     try {
         await User.getById(id)
