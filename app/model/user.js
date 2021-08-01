@@ -80,11 +80,10 @@ User.login = async function (season, userData) {
         users_icon.icon, users_icon.color, users.status
         FROM users
         INNER JOIN users_season ON users.id = users_season.id_user 
-        AND users_season.id_season = ?
         LEFT JOIN users_icon ON users.id = users_icon.id_user
         WHERE users.login = ? 
         AND users.password = ?`,
-        [season, userData.email, userData.password],
+        [userData.email, userData.password],
     );
 
     return rows;
