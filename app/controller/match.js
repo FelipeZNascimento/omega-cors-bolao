@@ -110,7 +110,7 @@ exports.list = function (req, res) {
                                     {
                                         id: match.id,
                                         timestamp: match.timestamp,
-                                        status: match.status,
+                                        status: parseInt(match.status),
                                         away: {
                                             id: match.idTeamAway,
                                             name: match.teamAway,
