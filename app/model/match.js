@@ -8,17 +8,20 @@ const asyncQuery = promisify(sql.query).bind(sql);
 var Match = function (match) {
     this.match = match.match;
     this.id = match.id;
-    this.id_season = match.id_season;
-    this.week = match.week;
+    this.idSeason = match.idSeason;
+    this.week = parseInt(match.week);
     this.timestamp = match.timestamp;
-    this.away_team_code = match.away_team_code;
-    this.id_away_team = match.id_away_team;
-    this.away_points = match.away_points;
-    this.home_points = match.home_points;
-    this.id_home_team = match.id_home_team;
-    this.home_team_code = match.home_team_code;
-    this.status = match.status;
+    this.awayTeamCode = match.awayTeamCode;
+    this.idAwayTeam = match.idAwayTeam;
+    this.awayPoints = parseInt(match.awayPoints);
+    this.homePoints = parseInt(match.homePoints);
+    this.idHomeTeam = match.idHomeTeam;
+    this.homeTeamCode = match.homeTeamCode;
+    this.status = parseInt(match.status);
     this.possession = match.possession;
+    this.overUnder = match.overUnder;
+    this.homeTeamOdds = match.homeTeamOdds;
+    this.clock = match.clock;
 };
 
 Match.getById = async function (season) {
@@ -99,13 +102,14 @@ Match.getBySeasonAndWeek = function (season, week, result) {
         });
 };
 
-Match.updateFromMatchInfo = function (matchData, season, result) {
-    sql.query(
+Match.updateFromMatchInfo = async function (matchData, season) {
+    const rows = asyncQuery(
         `UPDATE matches
         SET away_points = ?,
         home_points = ?,
         status = ?,
-        possession = ?
+        possession = ?,
+        clock = ?
         WHERE id_away_team = (
             SELECT id 
             FROM teams
@@ -119,24 +123,49 @@ Match.updateFromMatchInfo = function (matchData, season, result) {
         AND week = ?
         AND id_season = ?`,
         [
-            matchData.away_points,
-            matchData.home_points,
+            matchData.awayPoints,
+            matchData.homePoints,
             matchData.status,
             matchData.possession,
-            matchData.away_team_code,
-            matchData.home_team_code,
+            matchData.clock,
+            matchData.awayTeamCode,
+            matchData.homeTeamCode,
             matchData.week,
             season
-        ],
-        function (err, res) {
-            if (err) {
-                console.log(`error: ${err}`);
-                result(err, null);
-            } else {
-                result(null, res);
-            }
-        }
-    )
+        ]
+    );
+
+    return rows;
+};
+
+Match.updateOddsMatchInfo = async function (matchData, season) {
+    const rows = asyncQuery(
+        `UPDATE matches
+        SET overUnder = ?,
+        homeTeamOdds = ?
+        WHERE id_away_team = (
+            SELECT id 
+            FROM teams
+            WHERE code = ?
+        )
+        AND id_home_team = (
+            SELECT id 
+            FROM teams
+            WHERE code = ?
+        )
+        AND week = ?
+        AND id_season = ?`,
+        [
+            matchData.overUnder,
+            matchData.homeTeamOdds,
+            matchData.awayTeamCode,
+            matchData.homeTeamCode,
+            matchData.week,
+            season
+        ]
+    );
+
+    return rows;
 };
 
 module.exports = Match;
