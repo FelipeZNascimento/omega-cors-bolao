@@ -3,6 +3,7 @@ const Bets = require('../model/bets.js');
 const User = require('../model/user.js');
 const Sort = require('../utilities/sort');
 const SEASON_MAPPING = require('../const/seasonMapping');
+const MATCH_STATUS = require('../const/matchStatus');
 
 exports.listBySeason = async function (req, res) {
     const { season } = req.params;
@@ -45,15 +46,16 @@ exports.listByWeek = async function (req, res) {
 
 exports.list = function (req, res) {
     const { season, week } = req.params;
+    const normalizedSeason = season > 2000
+        ? SEASON_MAPPING[season]
+        : season;
 
     if (req.session.user) {
         User.updateLastOnlineTime(req.session.user.id);
     }
 
     Match.getBySeasonAndWeek(
-        season > 2000
-            ? SEASON_MAPPING[season]
-            : season,
+        normalizedSeason,
         week,
         function (err, matches) {
             if (err) {
@@ -152,27 +154,59 @@ exports.list = function (req, res) {
     );
 };
 
-exports.updateBySeason = function (req, res) {
+exports.updateBySeason = async function (req, res) {
     const matchData = new Match(req.body);
     const { key, season } = req.params;
+    const normalizedSeason = season > 2000
+        ? SEASON_MAPPING[season]
+        : season;
 
     if (req.session.user) {
         User.updateLastOnlineTime(req.session.user.id);
     }
 
     if (key !== process.env.API_UPDATE_KEY) { // Use env variable to check keys
-        res.status(400).send({ error: true, message: 'Access forbidden.' });
+        return res.status(400).send({ error: true, message: 'Access forbidden.' });
     } else {
-        Match.updateFromMatchInfo(
-            matchData,
-            season,
-            function (err, task) {
-                if (err) {
-                    res.status(400).send(err);
-                } else {
-                    res.json(task);
+        try {
+            if (matchData.status === MATCH_STATUS.NOT_STARTED) {
+                if (matchData.overUnder == null
+                    || matchData.homeTeamOdds == null
+                    || matchData.awayTeamCode == null
+                    || matchData.homeTeamCode == null
+                    || matchData.week == null) {
+                    return res.status(400).send({ error: true, message: 'Missing parameters.' });
                 }
+                await Match.updateOddsMatchInfo(
+                    matchData,
+                    normalizedSeason
+                )
+                    .then(async (task) => {
+                        res.send(task);
+                    })
+            } else {
+                if (matchData.awayPoints == null
+                    || matchData.homePoints == null
+                    || matchData.status == null
+                    || matchData.possession == null
+                    || matchData.clock == null
+                    || matchData.awayTeamCode == null
+                    || matchData.homeTeamCode == null
+                    || matchData.week == null) {
+                    return res.status(400).send({ error: true, message: 'Missing parameters.' });
+                }
+
+                await Match.updateFromMatchInfo(
+                    matchData,
+                    normalizedSeason
+                )
+                    .then(async (task) => {
+                        res.send(task);
+                    })
             }
-        );
+        } catch (err) {
+            console.log(err);
+            res.status(400).send(err.message);
+        }
     }
 }
