@@ -134,7 +134,10 @@ exports.list = function (req, res) {
                                             foreground: match.teamHomeForeground,
                                         },
                                         loggedUserBets: loggedUserBetsObject,
-                                        bets: betsObject
+                                        bets: betsObject,
+                                        overUnder: match.overUnder,
+                                        homeTeamOdds: match.homeTeamOdds,
+                                        clock: match.clock
                                     }
                                 )
                             });

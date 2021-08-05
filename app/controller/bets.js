@@ -79,11 +79,12 @@ exports.listBetsBySeasonAndWeek = function (req, res) {
     const { season, week } = req.params;
     const sessionUser = user === undefined ? null : user;
     const sessionUserId = user === undefined ? null : user.id;
+    const normalizedSeason = season > 2000
+        ? SEASON_MAPPING[season]
+        : season;
 
     Match.getBySeasonAndWeek(
-        season > 2000
-            ? SEASON_MAPPING[season]
-            : season,
+        normalizedSeason,
         week,
         function (err, matches) {
             if (err) {
@@ -141,7 +142,10 @@ exports.listBetsBySeasonAndWeek = function (req, res) {
                                             foreground: match.teamHomeForeground,
                                         },
                                         loggedUserBets: loggedUserBetsObject,
-                                        bets: null
+                                        overUnder: match.overUnder,
+                                        homeTeamOdds: match.homeTeamOdds,
+                                        bets: null,
+                                        clock: match.clock
                                     }
                                 )
                             });
