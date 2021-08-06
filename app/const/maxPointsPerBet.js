@@ -2,9 +2,9 @@ const EXTRA_BETS_MAPPING = require('./extraBetsMapping');
 
 let maxPointsPerBet = {};
 
-const regularSeasonMaxPoints = (season, week) => {
+const seasonMaxPoints = (season, week) => {
     if (season >= 1 && season <= 8) {
-        if (week >= 1 && week <= 17) {
+        if (week >= 0 && week <= 17) {
             return 10;
         }
 
@@ -22,7 +22,7 @@ const regularSeasonMaxPoints = (season, week) => {
     }
 
     if (season >= 9) {
-        if (week >= 1 && week <= 18) {
+        if (week >= 0 && week <= 18) {
             return 10;
         }
         if (week === 19 || week === 20) {
@@ -69,7 +69,7 @@ const extraPointsMapping = (extraType) => {
     }
 };
 
-maxPointsPerBet.RegularSeason = regularSeasonMaxPoints;
+maxPointsPerBet.Season = seasonMaxPoints;
 maxPointsPerBet.Extras = extraPointsMapping;
 
 module.exports = maxPointsPerBet;
