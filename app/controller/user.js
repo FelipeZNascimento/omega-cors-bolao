@@ -177,7 +177,7 @@ exports.register = async function register(req, res) {
 
                 const allQueries = [
                     User.setOnCurrentSeason(season, result.insertId),
-                    User.setIcons(result.insertId)
+                    User.setIcons(result.insertId, userData.icon, userData.color)
                 ];
 
                 const allResults = await Promise.allSettled(allQueries);
