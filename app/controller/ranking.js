@@ -2,9 +2,57 @@ const Bets = require('../model/bets.js');
 const Ranking = require('../model/ranking.js');
 const User = require('../model/user.js');
 const Match = require('../model/match.js');
+
 const MaxPointsPerBet = require('../const/maxPointsPerBet');
 const EXTRA_BETS_MAPPING = require('../const/extraBetsMapping');
 const SEASON_MAPPING = require('../const/seasonMapping');
+const BET_VALUES = require('../const/betValues');
+
+const returnPoints = (match, betValue, maxPoints) => {
+    if (match.awayScore - match.homeScore > 0) { // away team won
+        if (match.awayScore - match.homeScore > 7) { // away team won by more than 7 points (easy win)
+            if (betValue === BET_VALUES.AWAY_EASY) {
+                return maxPoints;
+            } else if (betValue === 1) {
+                return (maxPoints / 2);
+            } else {
+                return 0;
+            }
+        } else { // hard win
+            if (betValue === BET_VALUES.AWAY_EASY) {
+                return (maxPoints / 2);
+            } else if (betValue === 1) {
+                return maxPoints;
+            } else {
+                return 0;
+            }
+        }
+    } else if (match.homeScore - match.awayScore > 0) { // home team won
+        if (match.homeScore - match.awayScore > 7) { // home team won by more than 7 points (easy win)
+            if (betValue === BET_VALUES.HOME_EASY) {
+                return maxPoints;
+            } else if (betValue === 2) {
+                return (maxPoints / 2);
+            } else {
+                return 0;
+            }
+        } else {
+            if (betValue === BET_VALUES.HOME_EASY) {
+                return (maxPoints / 2);
+            } else if (betValue === 2) {
+                return (maxPoints);
+            } else {
+                return 0;
+            }
+        }
+    } else {
+        if (betValue === BET_VALUES.AWAY_HARD || betValue === BET_VALUES.HOME_HARD) {
+            return (maxPoints / 2);
+        }
+    }
+
+    return 0;
+};
 
 const calculateUserExtraPoints = (user, extraBets, extraBetsResults) => {
     let extraBetsPoints = 0;
@@ -41,14 +89,15 @@ const calculateUserPoints = (user, matches, bets, totalPossiblePoints) => {
     let totalWinners = 0;
 
     matches.forEach((match) => {
-        const maxPointsPerBet = MaxPointsPerBet.RegularSeason(parseInt(match.season), parseInt(match.week));
+        const maxPointsPerBet = MaxPointsPerBet.Season(parseInt(match.season), parseInt(match.week));
 
         const matchBets = bets
             .filter((bet) => bet.matchId === match.id)
             .filter((bet) => bet.userId === user.id);
 
-        const betValue = matchBets.length > 0 ? matchBets[0].betValue : null;
-        const betPoints = Ranking.returnPoints(match, betValue, maxPointsPerBet);
+
+        const betValue = matchBets.length > 0 ? matchBets[0].betValue : null; // 0, 1, 2, 3 (away hard, away easy, home easy, home hard)
+        const betPoints = returnPoints(match, betValue, maxPointsPerBet);
         totalPoints += betPoints;
 
         if (betPoints > 0) {
@@ -137,14 +186,10 @@ exports.listBySeasonAndWeek = async function (req, res) {
                                 await User.getBySeason(season)
                                     .then((users) => {
                                         const totalPossiblePoints = matches.reduce((acumulator, match) =>
-                                            acumulator + MaxPointsPerBet.RegularSeason(parseInt(season), parseInt(match.week))
+                                            acumulator + MaxPointsPerBet.Season(parseInt(season), parseInt(match.week))
                                             , 0);
 
                                         const usersObject = users.map((user) => calculateUserPoints(user, matches, bets, totalPossiblePoints));
-                                        const fiveMinAgo = Math.floor(Date.now() / 1000) - (60 * 5);
-                                        // if(users.timestamp >= fiveMinAgo) {
-
-                                        // }
 
                                         const dataObject = {
                                             season: season,
@@ -179,7 +224,8 @@ exports.listBySeason = async function (req, res) {
             Match.getBySeason(normalizedSeason),
             User.getBySeason(normalizedSeason),
             Bets.extraBets(normalizedSeason),
-            Bets.extraBetsResults(normalizedSeason)
+            Bets.extraBetsResults(normalizedSeason),
+            Match.getNextMatchWeek()
         ];
 
         const allResults = await Promise.allSettled(allQueries);
@@ -196,6 +242,7 @@ exports.listBySeason = async function (req, res) {
         const users = allResults[1].value;
         const extraBets = allResults[2].value;
         const extraBetsResults = allResults[3].value.length > 0 ? JSON.parse(allResults[3].value[0].json) : null;
+        const weekInfo = allResults[4].value[0];
 
         Bets.byMatchIds(
             matches.map((match) => match.id),
@@ -203,8 +250,10 @@ exports.listBySeason = async function (req, res) {
                 if (err) {
                     res.status(400).send(err);
                 } else {
-                    const totalPossiblePoints = matches.reduce((acumulator, match) =>
-                        acumulator + MaxPointsPerBet.RegularSeason(parseInt(normalizedSeason), parseInt(match.week))
+                    const totalPossiblePoints = matches
+                        .filter((match) => match.week <= weekInfo.week)
+                        .reduce((acumulator, match) =>
+                        acumulator + MaxPointsPerBet.Season(parseInt(normalizedSeason), parseInt(match.week))
                         , 0);
 
                     const usersObject = users.map((user) => {
