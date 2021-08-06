@@ -1,17 +1,17 @@
-const DefaultConfig = require('../const/defaultConfig.js');
 const Season = require('../model/season.js');
 const Team = require('../model/team.js');
 const User = require('../model/user.js');
-const SEASON_MAPPING = require('../const/seasonMapping');
+const Match = require('../model/match.js');
 
 exports.default = async function (req, res) {
-    const currentSeason = DefaultConfig.seasonId;
+    const currentSeason = process.env.SEASON;
     const seasonStart = process.env.SEASON_START;
 
     try {
         const allQueries = [
             Season.getInfo(currentSeason),
-            Team.getAll()
+            Team.getAll(),
+            Match.getNextMatchWeek()
         ];
 
         const allResults = await Promise.allSettled(allQueries);
@@ -26,6 +26,7 @@ exports.default = async function (req, res) {
 
         const seasonInfo = allResults[0].value[0];
         const teams = allResults[1].value;
+        const weekInfo = allResults[2].value[0];
         const teamsByConferenceAndDivision = Team.byConferenceAndDivision(teams);
 
         if (req.session.user) {
@@ -34,8 +35,8 @@ exports.default = async function (req, res) {
 
         const configData = {
             currentSeason: seasonInfo.id,
-            currentWeek: DefaultConfig.currentWeek,
             loggedUser: req.session.user,
+            currentWeek: weekInfo.week,
             seasonStart,
             teams,
             teamsByConferenceAndDivision: teamsByConferenceAndDivision
