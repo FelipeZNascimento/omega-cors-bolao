@@ -168,4 +168,16 @@ Match.updateOddsMatchInfo = async function (matchData, season) {
     return rows;
 };
 
+Match.getNextMatchWeek = async function () {
+    const rows = asyncQuery(
+        `SELECT week
+        FROM matches
+        WHERE matches.timestamp > UNIX_TIMESTAMP() - 24 * 3600
+        ORDER BY timestamp ASC
+        LIMIT 1`
+    );
+
+    return rows;
+};
+
 module.exports = Match;
