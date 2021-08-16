@@ -32,7 +32,7 @@ const sessionSettings = {
         maxAge: sevenDays
     },
     store: sessionStore,
-    resave: false,
+    resave: true,
     saveUninitialized: false,
 };
 

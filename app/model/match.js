@@ -3,7 +3,7 @@ var sql = require('../../sql/sql');
 
 // node native promisify
 const asyncQuery = promisify(sql.query).bind(sql);
-
+const MATCH_STATUS = require('../const/matchStatus');
 
 var Match = function (match) {
     this.match = match.match;
@@ -154,14 +154,16 @@ Match.updateOddsMatchInfo = async function (matchData, season) {
             WHERE code = ?
         )
         AND week = ?
-        AND id_season = ?`,
+        AND id_season = ?
+        AND status = ?`,
         [
             matchData.overUnder,
             matchData.homeTeamOdds,
             matchData.awayTeamCode,
             matchData.homeTeamCode,
             matchData.week,
-            season
+            season,
+            MATCH_STATUS.NOT_STARTED
         ]
     );
 

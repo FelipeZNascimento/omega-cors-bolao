@@ -189,7 +189,7 @@ exports.register = async function register(req, res) {
                     throw new Error('Connection error.');
                 }
 
-                await User.login(season, userData)
+                await User.login(userData)
                     .then((loginResult) => {
                         if (loginResult.length > 0) {
                             const newUser = new User(loginResult[0]);
@@ -213,18 +213,16 @@ exports.login = async function (req, res) {
         return res.status(400).send('User already logged in.');
     };
 
-    const season = process.env.SEASON;
     const userData = new User(req.body);
 
     try {
         if (!userData.email || !userData.password) {
             throw new Error('Missing parameters');
         }
-        await User.login(season, userData)
+        await User.login(userData)
             .then((loginResult) => {
                 if (loginResult.length > 0) {
                     User.updateLastOnlineTime(loginResult[0].id);
-
                     req.session.user = new User(loginResult[0]);
                     res.send(loginResult[0]);
                 } else {

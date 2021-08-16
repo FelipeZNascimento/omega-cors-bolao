@@ -74,7 +74,7 @@ User.setOnCurrentSeason = async function (season, id) {
     return rows;
 };
 
-User.login = async function (season, userData) {
+User.login = async function (userData) {
     const rows = asyncQuery(
         `SELECT SQL_NO_CACHE users.id, users.login as email, users.name, users.full_name as fullName,
         users_icon.icon, users_icon.color, users.status

@@ -198,8 +198,11 @@ exports.listBySeasonAndWeek = async function (req, res) {
                                             users: usersObject.sort((a, b) => b.totalPercentage - a.totalPercentage || b.totalBullseye - a.totalBullseye)
                                         };
 
-                                        res.send(dataObject);
+                                        if (req.session.user) {
+                                            User.updateLastOnlineTime(req.session.user.id);
+                                        }
 
+                                        res.send(dataObject);
                                     })
 
                             } catch (err) {
@@ -253,8 +256,8 @@ exports.listBySeason = async function (req, res) {
                     const totalPossiblePoints = matches
                         .filter((match) => match.week <= weekInfo.week)
                         .reduce((acumulator, match) =>
-                        acumulator + MaxPointsPerBet.Season(parseInt(normalizedSeason), parseInt(match.week))
-                        , 0);
+                            acumulator + MaxPointsPerBet.Season(parseInt(normalizedSeason), parseInt(match.week))
+                            , 0);
 
                     const usersObject = users.map((user) => {
                         const totalExtras = calculateUserExtraPoints(user, extraBets, extraBetsResults);
