@@ -1,11 +1,11 @@
 const express = require('express'),
-    app = module.exports = express(),
+    app = express(),
     cors = require('cors'),
-    port = process.env.PORT || 8081,
     session = require('express-session'),
     MySQLStore = require('express-mysql-session')(session),
     SQLConfig = require('./app/const/sqlConfig'),
-    dotenv = require('dotenv');
+    dotenv = require('dotenv'),
+    http = require('http');
 
 dotenv.config();
 const allowedOrigins = [
@@ -22,7 +22,6 @@ app.options('*', cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-var sessionStore = new MySQLStore(SQLConfig.returnConfig(port));
 const sessionSecret = process.env.SESSION_SECRET;
 
 const sevenDays = 7 * 24 * 60 * 60 * 1000;
@@ -31,7 +30,6 @@ const sessionSettings = {
     cookie: {
         maxAge: sevenDays
     },
-    store: sessionStore,
     resave: true,
     saveUninitialized: false,
 };
@@ -41,15 +39,20 @@ if (app.get('env') === 'production') {
     app.set('trust proxy', 1) // trust first proxy
     sessionSettings.cookie.secure = true; // serve secure cookies
     sessionSettings.cookie.sameSite = 'none'; // serve secure cookies
+    sessionSettings.store = new MySQLStore(SQLConfig.returnConfig('production'));
 } else {
     sessionSettings.cookie.secure = false;
+    sessionSettings.store = new MySQLStore(SQLConfig.returnConfig());
 }
 
 app.use(session(sessionSettings));
+let server = http.createServer(app);
 
-app.listen(port, function () {
-    console.log('CORS-enabled web server listening on port ' + port);
+server.listen(0, function () {
+    console.log('CORS-enabled web server listening on port ' + server.address().port);
 });
 
 var routes = require('./app/routes/appRoutes'); //importing route 
-routes(app); //register the route
+routes(app); //register the routes
+
+module.exports = app;

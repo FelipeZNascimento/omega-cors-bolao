@@ -14,11 +14,11 @@ var SQLConfig = {
     }
 };
 
-SQLConfig.returnConfig = function (port) {
-    if (port === 8081) {
-        return SQLConfig.localhostConfig;
-    } else {
+SQLConfig.returnConfig = function (env) {
+    if (env === 'production') {
         return SQLConfig.serverConfig;
+    } else {
+        return SQLConfig.localhostConfig;
     }
 };
 
