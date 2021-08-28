@@ -1,8 +1,11 @@
-var mysql = require('mysql');
-var SQLConfig = require('../app/const/sqlConfig');
+const mysql = require('@vlasky/mysql');
+const express = require('express');
+const SQLConfig = require('../app/const/sqlConfig');
 
-var port = process.env.PORT || 8081;
-var connection = mysql.createConnection(SQLConfig.returnConfig(port));
+const app = express();
+const environment = app.get('env');
+// const environment = 'production';
+const connection = mysql.createConnection(SQLConfig.returnConfig(environment));
 
 connection.connect(function (err) {
 	if (err) {

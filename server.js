@@ -8,7 +8,9 @@ const express = require('express'),
     http = require('http');
 
 dotenv.config();
+
 const allowedOrigins = [
+    'http://localhost',
     'http://localhost:3000',
     /\.omegafox\.me$/
 ];
@@ -34,22 +36,24 @@ const sessionSettings = {
     saveUninitialized: false,
 };
 
-if (app.get('env') === 'production') {
-    console.log('is production');
+let serverPort = 8081;
+const environment = app.get('env');
+// const environment = 'production';
+if (environment === 'production') {
+    serverPort = 0;
     app.set('trust proxy', 1) // trust first proxy
     sessionSettings.cookie.secure = true; // serve secure cookies
     sessionSettings.cookie.sameSite = 'none'; // serve secure cookies
-    sessionSettings.store = new MySQLStore(SQLConfig.returnConfig('production'));
 } else {
     sessionSettings.cookie.secure = false;
-    sessionSettings.store = new MySQLStore(SQLConfig.returnConfig());
 }
+sessionSettings.store = new MySQLStore(SQLConfig.returnConfig(environment));
 
 app.use(session(sessionSettings));
 let server = http.createServer(app);
 
-server.listen(0, function () {
-    console.log('CORS-enabled web server listening on port ' + server.address().port);
+server.listen(serverPort, function () {
+    console.log(`CORS-enabled web server listening on port ${server.address().port} at ${environment} environment`);
 });
 
 var routes = require('./app/routes/appRoutes'); //importing route 
