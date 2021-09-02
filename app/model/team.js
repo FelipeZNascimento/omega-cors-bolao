@@ -1,6 +1,7 @@
 var sql = require('../../sql/sql');
 const { promisify } = require('util');
 const asyncQuery = promisify(sql.query).bind(sql);
+const asyncHttps = require('../utilities/https');
 
 var Team = function (team) {
     this.id = team.id;
@@ -10,6 +11,23 @@ var Team = function (team) {
     this.division = team.division;
     this.code = team.code;
     this.team = team.team;
+};
+
+Team.mergeWithEspn = (teams, espnFetch) => {
+    const espnTeams = espnFetch.sports[0].leagues[0].teams;
+
+    if (!espnTeams) {
+        return teams;
+    }
+
+    const updatedTeams = teams.map((team) => {
+        selectedTeam = espnTeams.filter((espnTeam) => espnTeam.team.abbreviation === team.code)[0].team;
+        team.winLosses = selectedTeam.record.items[0].summary;
+
+        return team;
+    });
+
+    return updatedTeams;
 };
 
 Team.byConferenceAndDivision = (teams) => {
@@ -45,9 +63,11 @@ Team.byConferenceAndDivision = (teams) => {
 };
 
 Team.getAll = async function () {
-    const rows = asyncQuery(`SELECT SQL_NO_CACHE * FROM teams`);
-
-    return rows;
+    return asyncQuery(`SELECT SQL_NO_CACHE * FROM teams`);
 };
+
+Team.fetchESPNApi = async function () {
+    return asyncHttps('https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams?limit=32');
+}
 
 module.exports = Team;
