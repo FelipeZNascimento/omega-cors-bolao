@@ -11,6 +11,7 @@ exports.default = async function (req, res) {
         const allQueries = [
             Season.getInfo(currentSeason),
             Team.getAll(),
+            Team.fetchESPNApi(),
             Match.getNextMatchWeek()
         ];
 
@@ -26,8 +27,10 @@ exports.default = async function (req, res) {
 
         const seasonInfo = allResults[0].value[0];
         const teams = allResults[1].value;
-        const weekInfo = allResults[2].value[0];
-        const teamsByConferenceAndDivision = Team.byConferenceAndDivision(teams);
+        const teamsFromESPN = JSON.parse(allResults[2].value);
+        const teamsUpdated = Team.mergeWithEspn(teams, teamsFromESPN);
+        const weekInfo = allResults[3].value[0];
+        const teamsByConferenceAndDivision = Team.byConferenceAndDivision(teamsUpdated);
 
         if (req.session.user) {
             User.updateLastOnlineTime(req.session.user.id);
@@ -38,7 +41,7 @@ exports.default = async function (req, res) {
             loggedUser: req.session.user,
             currentWeek: weekInfo.week,
             seasonStart,
-            teams,
+            teamsUpdated,
             teamsByConferenceAndDivision: teamsByConferenceAndDivision
         };
 
