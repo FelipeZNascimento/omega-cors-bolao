@@ -1,7 +1,10 @@
 const Season = require('../model/season.js');
-const Team = require('../model/team.js');
 const User = require('../model/user.js');
 const Match = require('../model/match.js');
+
+const TeamController = require('../controller/team.js');
+const CACHE_KEYS = require('../const/cacheValues');
+const cachedInfo = require('../utilities/cache');
 
 exports.default = async function (req, res) {
     const currentSeason = process.env.SEASON;
@@ -10,10 +13,17 @@ exports.default = async function (req, res) {
     try {
         const allQueries = [
             Season.getInfo(currentSeason),
-            Team.getAll(),
-            Team.fetchESPNApi(),
             Match.getNextMatchWeek()
         ];
+
+        let teams = cachedInfo.get(CACHE_KEYS.TEAMS);
+        let teamsByConferenceAndDivision = cachedInfo.get(CACHE_KEYS.TEAMS_BY_CONFERENCE_AND_DIVISION);
+
+        if (teams == undefined || teamsByConferenceAndDivision == undefined) {
+            const fetchedTeams = await TeamController.fetchFromESPNApi();
+            teams = fetchedTeams.teams;
+            teamsByConferenceAndDivision = fetchedTeams.teamsByConferenceAndDivision;
+        }
 
         const allResults = await Promise.allSettled(allQueries);
         const errors = allResults
@@ -26,11 +36,7 @@ exports.default = async function (req, res) {
         }
 
         const seasonInfo = allResults[0].value[0];
-        const teams = allResults[1].value;
-        const teamsFromESPN = JSON.parse(allResults[2].value);
-        const teamsUpdated = Team.mergeWithEspn(teams, teamsFromESPN);
-        const weekInfo = allResults[3].value[0];
-        const teamsByConferenceAndDivision = Team.byConferenceAndDivision(teamsUpdated);
+        const weekInfo = allResults[1].value[0];
 
         if (req.session.user) {
             User.updateLastOnlineTime(req.session.user.id);
@@ -38,11 +44,11 @@ exports.default = async function (req, res) {
 
         const configData = {
             currentSeason: seasonInfo.id,
-            loggedUser: req.session.user,
             currentWeek: weekInfo.week,
+            loggedUser: req.session.user,
             seasonStart,
-            teamsUpdated,
-            teamsByConferenceAndDivision: teamsByConferenceAndDivision
+            teams,
+            teamsByConferenceAndDivision,
         };
 
         res.send(configData);

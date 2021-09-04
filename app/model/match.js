@@ -81,16 +81,13 @@ Match.getBySeasonAndWeek = function (season, week, result) {
     sql.query(
         `SELECT SQL_NO_CACHE matches.id, matches.timestamp, matches.week, matches.id_season as season, matches.status, matches.possession,
         matches.away_points as awayScore, matches.home_points as homeScore, matches.clock, matches.overUnder, matches.homeTeamOdds, matches.clock,
-        teamHome.name AS teamHome, teamHome.alias AS teamHomeAlias, teamHome.id AS idTeamHome, 
-        teamHome.code AS teamHomeCode, teamHome.background AS teamHomeBackground, teamHome.foreground AS teamHomeForeground, 
-        teamAway.name AS teamAway, teamAway.alias AS teamAwayAlias, teamAway.id AS idTeamAway,
-        teamAway.code AS teamAwayCode, teamAway.background AS teamAwayBackground, teamAway.foreground AS teamAwayForeground
+        teamHome.id AS idTeamHome, teamAway.id AS idTeamAway
         FROM matches
         INNER JOIN teams as teamHome 		ON matches.id_home_team = teamHome.id
         INNER JOIN teams as teamAway 		ON matches.id_away_team = teamAway.id
         WHERE matches.id_season = ?
         AND matches.week = ?
-        ORDER BY matches.timestamp ASC`,
+        ORDER BY matches.timestamp, teamHome.code ASC`,
         [season, week],
         function (err, res) {
             if (err) {
