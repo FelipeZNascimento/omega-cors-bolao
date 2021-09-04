@@ -166,11 +166,12 @@ exports.listRecords = async function (req, res) {
 
 exports.listBySeasonAndWeek = async function (req, res) {
     const { season, week } = req.params;
+    const normalizedSeason = season > 2000
+        ? SEASON_MAPPING[season]
+        : season;
 
     Match.getBySeasonAndWeek(
-        season > 2000
-            ? SEASON_MAPPING[season]
-            : season,
+        normalizedSeason,
         week,
         async function (err, matches) {
             if (err) {

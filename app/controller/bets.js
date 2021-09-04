@@ -1,6 +1,10 @@
 const Bets = require('../model/bets.js');
 const Match = require('../model/match.js');
 const User = require('../model/user.js');
+
+const TeamController = require('../controller/team.js');
+const cachedInfo = require('../utilities/cache.js');
+const CACHE_KEYS = require('../const/cacheValues');
 const SEASON_MAPPING = require('../const/seasonMapping');
 
 exports.listExtraBets = async function (req, res) {
@@ -70,13 +74,20 @@ exports.listExtraBets = async function (req, res) {
     res.send(dataObject);
 };
 
-exports.listBetsBySeasonAndWeek = function (req, res) {
+exports.listBetsBySeasonAndWeek = async function (req, res) {
     if (!req.session.user) {
         return res.status(400).send('No live session');
     }
 
     const { user } = req.session;
     const { season, week } = req.params;
+
+    let teams = cachedInfo.get(CACHE_KEYS.TEAMS);
+    if (teams == undefined) {
+        const fetchedTeams = await TeamController.fetchFromESPNApi();
+        teams = fetchedTeams.teams;
+    }
+
     const sessionUser = user === undefined ? null : user;
     const sessionUserId = user === undefined ? null : user.id;
     const normalizedSeason = season > 2000
@@ -116,30 +127,34 @@ exports.listBetsBySeasonAndWeek = function (req, res) {
                                             }
                                         ))[0];
 
+                                const awayTeam = teams.find((team) => team.id === match.idTeamAway);
+                                const homeTeam = teams.find((team) => team.id === match.idTeamHome);
                                 return (
                                     {
                                         id: match.id,
                                         timestamp: match.timestamp,
                                         status: match.status,
                                         away: {
-                                            id: match.idTeamAway,
-                                            name: match.teamAway,
-                                            alias: match.teamAwayAlias,
-                                            code: match.teamAwayCode,
+                                            id: awayTeam.id,
+                                            name: awayTeam.name,
+                                            alias: awayTeam.alias,
+                                            code: awayTeam.code,
+                                            background: awayTeam.background,
+                                            foreground: awayTeam.foreground,
+                                            winLosses: awayTeam.winLosses,
                                             possession: match.possession === 'away',
                                             score: match.awayScore,
-                                            background: match.teamAwayBackground,
-                                            foreground: match.teamAwayForeground
                                         },
                                         home: {
-                                            id: match.idTeamHome,
-                                            name: match.teamHome,
-                                            alias: match.teamHomeAlias,
-                                            code: match.teamHomeCode,
+                                            id: homeTeam.id,
+                                            name: homeTeam.name,
+                                            alias: homeTeam.alias,
+                                            code: homeTeam.code,
+                                            background: homeTeam.background,
+                                            foreground: homeTeam.foreground,
+                                            winLosses: homeTeam.winLosses,
                                             possession: match.possession === 'home',
                                             score: match.homeScore,
-                                            background: match.teamHomeBackground,
-                                            foreground: match.teamHomeForeground,
                                         },
                                         loggedUserBets: loggedUserBetsObject,
                                         overUnder: match.overUnder,
