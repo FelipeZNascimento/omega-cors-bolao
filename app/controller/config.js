@@ -37,6 +37,7 @@ exports.default = async function (req, res) {
 
         const seasonInfo = allResults[0].value[0];
         const weekInfo = allResults[1].value[0];
+        const currentWeek = weekInfo.week;
 
         if (req.session.user) {
             User.updateLastOnlineTime(req.session.user.id);
@@ -44,9 +45,9 @@ exports.default = async function (req, res) {
 
         const configData = {
             currentSeason: seasonInfo.id,
-            currentWeek: weekInfo.week,
             loggedUser: req.session.user,
             seasonStart,
+            currentWeek,
             teams,
             teamsByConferenceAndDivision,
         };

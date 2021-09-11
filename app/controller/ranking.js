@@ -129,6 +129,44 @@ const calculateUserPoints = (user, matches, bets, totalPossiblePoints) => {
         totalWinners,
         totalPercentage: totalPercentage.toFixed(1),
     })
+};
+
+const buildUsersObject = (users, matches, bets, isSeasonRanking, additionalInfo) => {
+    const usersObject = users
+        .map((user) => {
+            if (isSeasonRanking) {
+                const totalExtras = calculateUserExtraPoints(user, additionalInfo.extraBets, additionalInfo.extraBetsResults);
+                const userObject = calculateUserPoints(user, matches, bets, additionalInfo.totalPossiblePoints);
+
+                userObject.totalPoints += totalExtras;
+                userObject.totalExtras = totalExtras;
+
+                return userObject;
+            } else {
+                return calculateUserPoints(user, matches, bets, additionalInfo.totalPossiblePoints);
+            }
+        })
+        .sort((a, b) => b.totalPoints - a.totalPoints
+            || b.totalBullseye - a.totalBullseye
+            || a.name.localeCompare(b.name)
+        );
+
+    let position = 1;
+    usersObject.forEach((user, index) => {
+        if (index === 0) {
+            user.position = position;
+        } else {
+            if (user.totalPoints === usersObject[index - 1].totalPoints
+                && user.totalBullseye === usersObject[index - 1].totalBullseye) {
+                user.position = usersObject[index - 1].position;
+            } else {
+                user.position = position;
+            }
+        }
+        position++;
+    });
+
+    return usersObject;
 }
 
 exports.listRecords = async function (req, res) {
@@ -190,13 +228,12 @@ exports.listBySeasonAndWeek = async function (req, res) {
                                             acumulator + MaxPointsPerBet.Season(parseInt(season), parseInt(match.week))
                                             , 0);
 
-                                        const usersObject = users.map((user) => calculateUserPoints(user, matches, bets, totalPossiblePoints));
-
+                                        const usersObject = buildUsersObject(users, matches, bets, false, { totalPossiblePoints });
                                         const dataObject = {
                                             season: season,
                                             week: week,
                                             totalPossiblePoints,
-                                            users: usersObject.sort((a, b) => b.totalPercentage - a.totalPercentage || b.totalBullseye - a.totalBullseye)
+                                            users: usersObject
                                         };
 
                                         if (req.session.user) {
@@ -260,20 +297,11 @@ exports.listBySeason = async function (req, res) {
                             acumulator + MaxPointsPerBet.Season(parseInt(normalizedSeason), parseInt(match.week))
                             , 0);
 
-                    const usersObject = users.map((user) => {
-                        const totalExtras = calculateUserExtraPoints(user, extraBets, extraBetsResults);
-                        const userObject = calculateUserPoints(user, matches, bets, totalPossiblePoints);
-
-                        userObject.totalPoints += totalExtras;
-                        userObject.totalExtras = totalExtras;
-
-                        return userObject;
-                    });
-
+                    const usersObject = buildUsersObject(users, matches, bets, true, { extraBets, extraBetsResults, totalPossiblePoints });
                     const dataObject = {
                         season: normalizedSeason,
                         totalPossiblePoints,
-                        users: usersObject.sort((a, b) => b.totalPoints - a.totalPoints || b.totalBullseye - a.totalBullseye)
+                        users: usersObject
                     };
 
                     res.send(dataObject);
