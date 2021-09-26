@@ -7,6 +7,7 @@ const MaxPointsPerBet = require('../const/maxPointsPerBet');
 const EXTRA_BETS_MAPPING = require('../const/extraBetsMapping');
 const SEASON_MAPPING = require('../const/seasonMapping');
 const BET_VALUES = require('../const/betValues');
+const MATCH_STATUS = require('../const/matchStatus');
 
 const returnPoints = (match, betValue, maxPoints) => {
     if (match.awayScore - match.homeScore > 0) { // away team won
@@ -53,6 +54,7 @@ const returnPoints = (match, betValue, maxPoints) => {
 
     return 0;
 };
+exports.returnPoints = returnPoints;
 
 const calculateUserExtraPoints = (user, extraBets, extraBetsResults) => {
     let extraBetsPoints = 0;
@@ -87,6 +89,8 @@ const calculateUserPoints = (user, matches, bets, totalPossiblePoints) => {
     let totalPoints = 0;
     let totalBullseye = 0;
     let totalWinners = 0;
+    let totalBets = 0;
+    let totalMatches = matches.length;
 
     matches.forEach((match) => {
         const maxPointsPerBet = MaxPointsPerBet.Season(parseInt(match.season), parseInt(match.week));
@@ -95,8 +99,11 @@ const calculateUserPoints = (user, matches, bets, totalPossiblePoints) => {
             .filter((bet) => bet.matchId === match.id)
             .filter((bet) => bet.userId === user.id);
 
-
-        const betValue = matchBets.length > 0 ? matchBets[0].betValue : null; // 0, 1, 2, 3 (away hard, away easy, home easy, home hard)
+        let betValue = null;
+        if (matchBets.length > 0) {
+            betValue = matchBets[0].betValue; // 0, 1, 2, 3 (away hard, away easy, home easy, home hard)
+            totalBets++;
+        }
         const betPoints = returnPoints(match, betValue, maxPointsPerBet);
         totalPoints += betPoints;
 
@@ -127,6 +134,8 @@ const calculateUserPoints = (user, matches, bets, totalPossiblePoints) => {
         totalPoints,
         totalBullseye,
         totalWinners,
+        totalBets,
+        totalMatches,
         totalPercentage: totalPercentage.toFixed(1),
     })
 };
@@ -168,9 +177,10 @@ const buildUsersObject = (users, matches, bets, isSeasonRanking, additionalInfo)
 
     return usersObject;
 }
+exports.buildUsersObject = buildUsersObject;
 
 exports.listRecords = async function (req, res) {
-    let { accumulated, limit, orderBy, sortAsc, season, week, userId } = req.body;
+    let { accumulated, limit, sortAsc, season, week, userId } = req.body;
 
     try {
         let normalizedSeason = season;
@@ -186,11 +196,7 @@ exports.listRecords = async function (req, res) {
                     res.send(records);
                 })
         } else {
-            if (!Ranking.sortableColumns.includes(orderBy)) {
-                orderBy = Ranking.sortableColumns[0];
-            }
-
-            await Ranking.getRecords(orderBy, sortAsc, limit, normalizedSeason, week, userId)
+            await Ranking.getRecords(sortAsc, limit, normalizedSeason, week, userId)
                 .then((records) => {
                     res.send(records);
                 })
@@ -208,50 +214,47 @@ exports.listBySeasonAndWeek = async function (req, res) {
         ? SEASON_MAPPING[season]
         : season;
 
-    Match.getBySeasonAndWeek(
-        normalizedSeason,
-        week,
-        async function (err, matches) {
-            if (err) {
-                res.status(400).send(err);
-            } else {
-                Bets.byMatchIds(
-                    matches.map((match) => match.id),
-                    async function (err, bets) {
-                        if (err) {
-                            res.status(400).send(err);
-                        } else {
-                            try {
-                                await User.getBySeason(season)
-                                    .then((users) => {
-                                        const totalPossiblePoints = matches.reduce((acumulator, match) =>
-                                            acumulator + MaxPointsPerBet.Season(parseInt(season), parseInt(match.week))
-                                            , 0);
+    try {
+        await Match.getBySeasonAndWeek(normalizedSeason, week)
+            .then(async (matches) => {
+                const allQueries = [
+                    Bets.byMatchIds(matches.map((match) => match.id)),
+                    User.getBySeason(season)
+                ];
 
-                                        const usersObject = buildUsersObject(users, matches, bets, false, { totalPossiblePoints });
-                                        const dataObject = {
-                                            season: season,
-                                            week: week,
-                                            totalPossiblePoints,
-                                            users: usersObject
-                                        };
+                const allResults = await Promise.allSettled(allQueries);
+                const errors = allResults
+                    .filter(p => p.status === 'rejected')
+                    .map(p => p.reason);
 
-                                        if (req.session.user) {
-                                            User.updateLastOnlineTime(req.session.user.id);
-                                        }
+                if (errors.length > 0) {
+                    const errorMessage = errors.map((error) => error);
+                    throw new Error(errorMessage);
+                }
 
-                                        res.send(dataObject);
-                                    })
+                const bets = allResults[0].value;
+                const users = allResults[1].value;
+                const totalPossiblePoints = matches.reduce((acumulator, match) =>
+                    acumulator + MaxPointsPerBet.Season(parseInt(season), parseInt(match.week))
+                    , 0);
 
-                            } catch (err) {
-                                res.status(400).send(err.message);
-                            }
-                        }
-                    }
-                )
-            }
-        }
-    );
+                const usersObject = buildUsersObject(users, matches, bets, false, { totalPossiblePoints });
+                const dataObject = {
+                    season: season,
+                    week: week,
+                    totalPossiblePoints,
+                    users: usersObject
+                };
+
+                if (req.session.user) {
+                    User.updateLastOnlineTime(req.session.user.id);
+                }
+
+                res.send(dataObject);
+            });
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
 };
 
 exports.listBySeason = async function (req, res) {
@@ -284,31 +287,182 @@ exports.listBySeason = async function (req, res) {
         const extraBets = allResults[2].value;
         const extraBetsResults = allResults[3].value.length > 0 ? JSON.parse(allResults[3].value[0].json) : null;
         const weekInfo = allResults[4].value[0];
+        await Bets.byMatchIds(matches.map((match) => match.id))
+            .then((bets) => {
+                const totalPossiblePoints = matches
+                    .filter((match) => match.week <= weekInfo.week)
+                    .reduce((acumulator, match) =>
+                        acumulator + MaxPointsPerBet.Season(parseInt(normalizedSeason), parseInt(match.week))
+                        , 0);
 
-        Bets.byMatchIds(
-            matches.map((match) => match.id),
-            async function (err, bets) {
-                if (err) {
-                    res.status(400).send(err);
-                } else {
-                    const totalPossiblePoints = matches
-                        .filter((match) => match.week <= weekInfo.week)
-                        .reduce((acumulator, match) =>
-                            acumulator + MaxPointsPerBet.Season(parseInt(normalizedSeason), parseInt(match.week))
-                            , 0);
+                const usersObject = buildUsersObject(users, matches, bets, true, { extraBets, extraBetsResults, totalPossiblePoints });
+                const dataObject = {
+                    season: normalizedSeason,
+                    totalPossiblePoints,
+                    users: usersObject
+                };
 
-                    const usersObject = buildUsersObject(users, matches, bets, true, { extraBets, extraBetsResults, totalPossiblePoints });
-                    const dataObject = {
-                        season: normalizedSeason,
-                        totalPossiblePoints,
-                        users: usersObject
-                    };
-
-                    res.send(dataObject);
-                }
-            });
+                res.send(dataObject);
+            })
     } catch (err) {
         console.log(err);
         res.status(400).send(err.message);
     };
 };
+
+exports.updateWeeklyRecords = async function (req, res) {
+    const currentSeason = process.env.SEASON;
+    const { week } = req.params;
+
+    try {
+        Match.getNextMatchWeek().then(async (result) => {
+            const currentWeek = week || result[0].week;
+            const allQueries = [
+                Match.getBySeasonAndWeek(currentSeason, currentWeek),
+                Ranking.getRecords(false, 1, currentSeason, currentWeek),
+            ];
+
+            const allResults = await Promise.allSettled(allQueries);
+            const errors = allResults
+                .filter(p => p.status === 'rejected')
+                .map(p => p.reason);
+
+            if (errors.length > 0) {
+                const errorMessage = errors.map((error) => error);
+                throw new Error(errorMessage);
+            }
+
+            const matches = allResults[0].value;
+            const records = allResults[1].value;
+
+            if (records.length === 0
+                && matches.every((match) => match.status === MATCH_STATUS.FINAL || match.status === MATCH_STATUS.FINAL_OVERTIME)) {
+                const rankingQuery = [
+                    Bets.byMatchIds(matches.map((match) => match.id)),
+                    User.getBySeason(currentSeason)
+                ];
+
+                const rankingResults = await Promise.allSettled(rankingQuery);
+                const errors = rankingResults
+                    .filter(p => p.status === 'rejected')
+                    .map(p => p.reason);
+
+                if (errors.length > 0) {
+                    const errorMessage = errors.map((error) => error);
+                    throw new Error(errorMessage);
+                }
+
+                const bets = rankingResults[0].value;
+                const users = rankingResults[1].value;
+                const totalPossiblePoints = matches.reduce((acumulator, match) =>
+                    acumulator + MaxPointsPerBet.Season(parseInt(currentSeason), parseInt(match.week))
+                    , 0);
+
+                const usersObject = buildUsersObject(users, matches, bets, false, { totalPossiblePoints });
+                const pointsPerGame = MaxPointsPerBet.Season(currentSeason, currentWeek);
+
+                const dataObject = usersObject.map((data) => {
+                    return {
+                        userId: data.id,
+                        seasonId: currentSeason,
+                        week: currentWeek,
+                        points: data.totalPoints,
+                        bullseye: data.totalBullseye,
+                        winners: data.totalWinners,
+                        percentage: parseFloat(data.totalPoints / (data.totalMatches * pointsPerGame)).toFixed(4),
+                        numOfBets: data.totalBets,
+                        numOfGames: data.totalMatches,
+                        pointsPerGame
+                    }
+                });
+
+                const dataArray = usersObject.map((data) => {
+                    return [
+                        data.id,
+                        currentSeason,
+                        currentWeek,
+                        data.totalPoints,
+                        data.totalBullseye,
+                        data.totalWinners,
+                        parseFloat(data.totalPoints / (data.totalMatches * pointsPerGame)).toFixed(4),
+                        data.totalBets,
+                        data.totalMatches,
+                        pointsPerGame
+                    ]
+                });
+
+                Ranking.updateWeekly(dataArray);
+                res.send(dataObject);
+            } else {
+                res.send(records);
+            }
+        })
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+
+}
+
+exports.listRankingHistory = async function (req, res) {
+    const { season } = req.params;
+
+    const currentSeason = process.env.SEASON;
+    const normalizedSeason = season > 2000
+        ? SEASON_MAPPING[season]
+        : season;
+
+    try {
+        Match.getNextMatchWeek().then(async (result) => {
+            const currentWeek = result[0].week;
+            const allQueriesCumulative = [];
+            const allQueriesWeekly = [];
+            let maxWeek = 22;
+            if (normalizedSeason === currentSeason) {
+                maxWeek = currentWeek;
+            }
+
+            for (let i = 1; i <= maxWeek; i++) {
+                allQueriesWeekly.push(Ranking.getRecords(false, 99999, normalizedSeason, i));
+                allQueriesCumulative.push(Ranking.getCheckpoints(normalizedSeason, i));
+            }
+
+            const allResultsWeekly = await Promise.allSettled(allQueriesWeekly);
+            const allResultsCumulative = await Promise.allSettled(allQueriesCumulative);
+            const errorsWeekly = allResultsWeekly
+                .filter(p => p.status === 'rejected')
+                .map(p => p.reason);
+
+            const errorsCumulative = allResultsCumulative
+                .filter(p => p.status === 'rejected')
+                .map(p => p.reason);
+
+            if (errorsWeekly.length > 0) {
+                const errorMessage = errorsWeekly.map((error) => error);
+                throw new Error(errorMessage);
+            } else if (errorsCumulative.length > 0) {
+                const errorMessage = errorsCumulative.map((error) => error);
+                throw new Error(errorMessage);
+            }
+
+            const dataObject = {
+                season: normalizedSeason,
+                weeks: []
+            };
+
+            for (let i = 0; i < maxWeek; i++) {
+                const weekObject = {
+                    num: i + 1,
+                    accumulated: allResultsCumulative[i].value,
+                    weekly: allResultsWeekly[i].value
+                }
+
+                dataObject.weeks.push(weekObject);
+            }
+
+            res.send(dataObject);
+        })
+
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
+}

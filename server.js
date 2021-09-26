@@ -34,6 +34,7 @@ const sessionSettings = {
     },
     resave: true,
     saveUninitialized: false,
+    rolling: true,
 };
 
 let serverPort = 8081;
@@ -47,6 +48,7 @@ if (environment === 'production') {
 } else {
     sessionSettings.cookie.secure = false;
 }
+
 sessionSettings.store = new MySQLStore(SQLConfig.returnConfig(environment));
 
 app.use(session(sessionSettings));

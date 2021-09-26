@@ -16,7 +16,7 @@ Ranking.sortableColumns = [
     'userId',
 ];
 
-Ranking.getRecords = async function (orderBy, sortAsc, limit, season, week, userId) {
+Ranking.getRecords = async function (sortAsc, limit, season, week, userId) {
     let baseQuery =
         `SELECT ranking_weekly.userId, ranking_weekly.seasonId, ranking_weekly.week, ranking_weekly.points,
         ranking_weekly.bullseye, ranking_weekly.winners, ROUND(ranking_weekly.percentage * 100, 2) as percentage,
@@ -31,9 +31,7 @@ Ranking.getRecords = async function (orderBy, sortAsc, limit, season, week, user
     const preparedParams = [];
 
     if (week) {
-        baseQuery += accumulated
-            ? ` AND week <= ?`
-            : ` AND week = ?`;
+        baseQuery += ` AND week = ?`;
         preparedParams.push(week);
     }
 
@@ -47,11 +45,14 @@ Ranking.getRecords = async function (orderBy, sortAsc, limit, season, week, user
         preparedParams.push(userId);
     }
 
+    baseQuery += sortAsc
+        ? ` ORDER BY percentage ASC, bullseye ASC, winners ASC`
+        : ` ORDER BY percentage DESC, bullseye DESC, winners DESC`;
+
     const rows = asyncQuery(
         `${baseQuery}
-        ORDER BY ?? ${sortAsc ? 'ASC' : 'DESC'}
         LIMIT ?`,
-        [...preparedParams, orderBy, limit]
+        [...preparedParams, limit]
     );
 
     return rows;
@@ -92,6 +93,13 @@ Ranking.getCheckpoints = async function (season, week, userId) {
     );
 
     return rows;
+};
+
+Ranking.updateWeekly = async function (data) {
+    const rows = asyncQuery(
+        `INSERT INTO ranking_weekly (userId, seasonId, week, points, bullseye, winners, percentage, numOfBets, numOfGames, pointsPerGame) VALUES ?`,
+        [data],
+    );
 };
 
 module.exports = Ranking;
