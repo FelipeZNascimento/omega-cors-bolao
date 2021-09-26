@@ -66,10 +66,13 @@ module.exports = function (app) {
         .get(betsController.listExtraBets)
     app.route('/bolaonfl/bets/:season/:week')
         .get(betsController.listBetsBySeasonAndWeek)
+    app.route('/bolaonfl/betsHistory/:season/')
+        .get(betsController.listBetsHistory)
 
     // Records Routing
+    app.route('/bolaonfl/records/update/:week?')
+        .get(rankingController.updateWeeklyRecords)
     app.route('/bolaonfl/records/')
         .post(rankingController.listRecords)
-
 };
 
