@@ -1,11 +1,15 @@
 const Bets = require('../model/bets.js');
 const Match = require('../model/match.js');
 const User = require('../model/user.js');
+const Ranking = require('../model/ranking.js');
 
+const RankingController = require('../controller/ranking.js');
 const TeamController = require('../controller/team.js');
 const cachedInfo = require('../utilities/cache.js');
 const CACHE_KEYS = require('../const/cacheValues');
 const SEASON_MAPPING = require('../const/seasonMapping');
+const MATCH_STATUS = require('../const/matchStatus');
+const MaxPointsPerBet = require('../const/maxPointsPerBet');
 
 exports.listExtraBets = async function (req, res) {
     const { season } = req.params;
@@ -94,13 +98,9 @@ exports.listBetsBySeasonAndWeek = async function (req, res) {
         ? SEASON_MAPPING[season]
         : season;
 
-    Match.getBySeasonAndWeek(
-        normalizedSeason,
-        week,
-        function (err, matches) {
-            if (err) {
-                res.status(400).send(err);
-            } else {
+    try {
+        await Match.getBySeasonAndWeek(normalizedSeason, week)
+            .then(async (matches) => {
                 Bets.byUserIdAndMatchIds(
                     sessionUserId,
                     matches.map((match) => match.id),
@@ -176,10 +176,10 @@ exports.listBetsBySeasonAndWeek = async function (req, res) {
                         }
                     }
                 )
-
-            }
-        }
-    );
+            });
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
 };
 
 exports.updateExtraBets = async function (req, res) {
