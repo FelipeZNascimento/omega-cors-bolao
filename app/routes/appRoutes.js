@@ -14,35 +14,26 @@ module.exports = function (app) {
     // Matches Routing
     app.route('/bolaonfl/matches/update/:season/:key/')
         .post(matchController.updateBySeason)
-
     app.route('/bolaonfl/matches/season/:season/')
         .get(matchController.listBySeason)
-
     app.route('/bolaonfl/matches/week/:week/')
         .get(matchController.listByWeek)
-
     app.route('/bolaonfl/matches/:season/:week')
         .get(matchController.list)
 
     // Users Routing
     app.route('/bolaonfl/users/')
         .get(userController.listAll)
-
     app.route('/bolaonfl/user/update/')
         .post(userController.update)
-
     app.route('/bolaonfl/user/updatePreferences/')
         .post(userController.updatePreferences)
-
     app.route('/bolaonfl/user/register/')
         .post(userController.register)
-
     app.route('/bolaonfl/user/login/')
         .post(userController.login)
-
     app.route('/bolaonfl/user/logout/')
         .get(userController.logout)
-
     app.route('/bolaonfl/user/:id/')
         .get(userController.listById)
 
@@ -53,7 +44,8 @@ module.exports = function (app) {
     // Ranking Routing
     app.route('/bolaonfl/ranking/season/:season')
         .get(rankingController.listBySeason)
-
+    app.route('/bolaonfl/ranking/history/:season/')
+        .get(rankingController.listRankingHistory)
     app.route('/bolaonfl/ranking/:season/:week')
         .get(rankingController.listBySeasonAndWeek)
 
@@ -66,8 +58,6 @@ module.exports = function (app) {
         .get(betsController.listExtraBets)
     app.route('/bolaonfl/bets/:season/:week')
         .get(betsController.listBetsBySeasonAndWeek)
-    app.route('/bolaonfl/betsHistory/:season/')
-        .get(betsController.listBetsHistory)
 
     // Records Routing
     app.route('/bolaonfl/records/update/:week?')
