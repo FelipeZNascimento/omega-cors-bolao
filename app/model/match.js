@@ -77,9 +77,8 @@ Match.getByWeek = async function (week) {
     return rows;
 };
 
-Match.getBySeasonAndWeek = function (season, week, result) {
-    sql.query(
-        `SELECT SQL_NO_CACHE matches.id, matches.timestamp, matches.week, matches.id_season as season, matches.status, matches.possession,
+Match.getBySeasonAndWeek = async function (season, week) {
+    const rows = asyncQuery(`SELECT SQL_NO_CACHE matches.id, matches.timestamp, matches.week, matches.id_season as season, matches.status, matches.possession,
         matches.away_points as awayScore, matches.home_points as homeScore, matches.clock, matches.overUnder, matches.homeTeamOdds, matches.clock,
         teamHome.id AS idTeamHome, teamAway.id AS idTeamAway
         FROM matches
@@ -88,15 +87,10 @@ Match.getBySeasonAndWeek = function (season, week, result) {
         WHERE matches.id_season = ?
         AND matches.week = ?
         ORDER BY matches.timestamp, teamHome.code ASC`,
-        [season, week],
-        function (err, res) {
-            if (err) {
-                console.log(`error: ${err}`);
-                result(err, null);
-            } else {
-                result(null, res);
-            }
-        });
+        [season, week]
+    );
+
+    return rows;
 };
 
 Match.updateFromMatchInfo = async function (matchData, season) {

@@ -64,46 +64,21 @@ exports.list = async function (req, res) {
         User.updateLastOnlineTime(req.session.user.id);
     }
 
-    Match.getBySeasonAndWeek(
-        normalizedSeason,
-        week,
-        function (err, matches) {
-            if (err) {
-                res.status(400).send(err);
-            } else {
-                Bets.byMatchIds(
-                    matches.map((match) => match.id),
-                    function (err, bets) {
-                        if (err) {
-                            res.status(400).send(err);
-                        } else {
-                            const sessionUser = req.session.user === undefined ? null : req.session.user;
-                            const sessionUserId = req.session.user === undefined ? null : req.session.user.id;
+    try {
+        await Match.getBySeasonAndWeek(normalizedSeason, week)
+            .then(async (matches) => {
 
-                            const matchesObject = matches.map((match) => {
-                                const loggedUserBetsObject = sessionUser === null
-                                    ? null
-                                    : bets
-                                        .filter((bet) => bet.matchId === match.id)
-                                        .filter((bet) => bet.userId === sessionUserId)
-                                        .map((bet) => (
-                                            {
-                                                id: bet.id,
-                                                matchId: bet.matchId,
-                                                value: bet.betValue,
-                                                user: {
-                                                    id: bet.userId,
-                                                    icon: bet.userIcon,
-                                                    color: bet.userColor,
-                                                    name: bet.userName
-                                                }
-                                            }
-                                        ))[0];
+                await Bets.byMatchIds(matches.map((match) => match.id))
+                    .then((bets) => {
+                        const sessionUser = req.session.user === undefined ? null : req.session.user;
+                        const sessionUserId = req.session.user === undefined ? null : req.session.user.id;
 
-                                const betsObject = bets
+                        const matchesObject = matches.map((match) => {
+                            const loggedUserBetsObject = sessionUser === null
+                                ? null
+                                : bets
                                     .filter((bet) => bet.matchId === match.id)
-                                    .filter((bet) => bet.userId !== sessionUserId)
-                                    .sort(Sort.dynamic('userName'))
+                                    .filter((bet) => bet.userId === sessionUserId)
                                     .map((bet) => (
                                         {
                                             id: bet.id,
@@ -116,60 +91,78 @@ exports.list = async function (req, res) {
                                                 name: bet.userName
                                             }
                                         }
-                                    ));
+                                    ))[0];
 
-                                const awayTeam = teams.find((team) => team.id === match.idTeamAway);
-                                const homeTeam = teams.find((team) => team.id === match.idTeamHome);
-
-                                return (
+                            const betsObject = bets
+                                .filter((bet) => bet.matchId === match.id)
+                                .filter((bet) => bet.userId !== sessionUserId)
+                                .sort(Sort.dynamic('userName'))
+                                .map((bet) => (
                                     {
-                                        id: match.id,
-                                        timestamp: match.timestamp,
-                                        status: parseInt(match.status),
-                                        away: {
-                                            id: awayTeam.id,
-                                            name: awayTeam.name,
-                                            alias: awayTeam.alias,
-                                            code: awayTeam.code,
-                                            background: awayTeam.background,
-                                            foreground: awayTeam.foreground,
-                                            winLosses: awayTeam.winLosses,
-                                            possession: match.possession === 'away',
-                                            score: match.awayScore,
-                                        },
-                                        home: {
-                                            id: homeTeam.id,
-                                            name: homeTeam.name,
-                                            alias: homeTeam.alias,
-                                            code: homeTeam.code,
-                                            background: homeTeam.background,
-                                            foreground: homeTeam.foreground,
-                                            winLosses: homeTeam.winLosses,
-                                            possession: match.possession === 'home',
-                                            score: match.homeScore,
-                                        },
-                                        loggedUserBets: loggedUserBetsObject,
-                                        bets: betsObject,
-                                        overUnder: match.overUnder,
-                                        homeTeamOdds: match.homeTeamOdds,
-                                        clock: match.clock
+                                        id: bet.id,
+                                        matchId: bet.matchId,
+                                        value: bet.betValue,
+                                        user: {
+                                            id: bet.userId,
+                                            icon: bet.userIcon,
+                                            color: bet.userColor,
+                                            name: bet.userName
+                                        }
                                     }
-                                )
-                            });
+                                ));
 
-                            const dataObject = {
-                                season: season,
-                                week: week,
-                                matches: matchesObject
-                            };
+                            const awayTeam = teams.find((team) => team.id === match.idTeamAway);
+                            const homeTeam = teams.find((team) => team.id === match.idTeamHome);
 
-                            res.send(dataObject);
-                        }
-                    }
-                )
-            }
-        }
-    );
+                            return (
+                                {
+                                    id: match.id,
+                                    timestamp: match.timestamp,
+                                    status: parseInt(match.status),
+                                    away: {
+                                        id: awayTeam.id,
+                                        name: awayTeam.name,
+                                        alias: awayTeam.alias,
+                                        code: awayTeam.code,
+                                        background: awayTeam.background,
+                                        foreground: awayTeam.foreground,
+                                        winLosses: awayTeam.winLosses,
+                                        possession: match.possession === 'away',
+                                        score: match.awayScore,
+                                    },
+                                    home: {
+                                        id: homeTeam.id,
+                                        name: homeTeam.name,
+                                        alias: homeTeam.alias,
+                                        code: homeTeam.code,
+                                        background: homeTeam.background,
+                                        foreground: homeTeam.foreground,
+                                        winLosses: homeTeam.winLosses,
+                                        possession: match.possession === 'home',
+                                        score: match.homeScore,
+                                    },
+                                    loggedUserBets: loggedUserBetsObject,
+                                    bets: betsObject,
+                                    overUnder: match.overUnder,
+                                    homeTeamOdds: match.homeTeamOdds,
+                                    clock: match.clock
+                                }
+                            )
+                        });
+
+                        const dataObject = {
+                            season: season,
+                            week: week,
+                            matches: matchesObject
+                        };
+
+                        res.send(dataObject);
+                    });
+
+            })
+    } catch (err) {
+        res.status(400).send(err.message);
+    }
 };
 
 exports.updateBySeason = async function (req, res) {
