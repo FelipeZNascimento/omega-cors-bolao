@@ -22,6 +22,7 @@ Ranking.getRecords = async function (sortAsc, limit, season, week, userId) {
         ranking_weekly.bullseye, ranking_weekly.winners, ROUND(ranking_weekly.percentage * 100, 2) as percentage,
         ranking_weekly.numOfBets, ranking_weekly.numOfGames,
         users.name as userName, users_icon.icon as userIcon, users_icon.color as userColor,
+        SUM(ranking_weekly.numOfGames * ranking_weekly.pointsPerGame) as pointsAvailable,
         seasons.description as season
         FROM ranking_weekly
         INNER JOIN users 		ON users.id = ranking_weekly.userId

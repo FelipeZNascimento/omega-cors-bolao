@@ -65,4 +65,3 @@ module.exports = function (app) {
     app.route('/bolaonfl/records/')
         .post(rankingController.listRecords)
 };
-
