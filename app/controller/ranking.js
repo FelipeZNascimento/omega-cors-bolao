@@ -262,6 +262,7 @@ exports.listBySeason = async function (req, res) {
     const normalizedSeason = season > 2000
         ? SEASON_MAPPING[season]
         : season;
+    const currentWeek = req.session.currentWeek;
 
     try {
         const allQueries = [
@@ -287,15 +288,38 @@ exports.listBySeason = async function (req, res) {
         const extraBets = allResults[2].value;
         const extraBetsResults = allResults[3].value.length > 0 ? JSON.parse(allResults[3].value[0].json) : null;
         const weekInfo = allResults[4].value[0];
+
         await Bets.byMatchIds(matches.map((match) => match.id))
             .then((bets) => {
+                const pastMatches = matches.filter((match) => match.week < currentWeek);
+                const pastPossiblePoints = pastMatches
+                    .reduce((acumulator, match) =>
+                        acumulator + MaxPointsPerBet.Season(parseInt(normalizedSeason), parseInt(match.week))
+                        , 0);
+                const previousWeekPositions = buildUsersObject(users, pastMatches, bets, true, { extraBets, extraBetsResults, pastPossiblePoints })
+                    .map((userObject) => {
+                        return {
+                            id: userObject.id,
+                            position: userObject.position
+                        }
+                    });
+
                 const totalPossiblePoints = matches
                     .filter((match) => match.week <= weekInfo.week)
                     .reduce((acumulator, match) =>
                         acumulator + MaxPointsPerBet.Season(parseInt(normalizedSeason), parseInt(match.week))
                         , 0);
 
-                const usersObject = buildUsersObject(users, matches, bets, true, { extraBets, extraBetsResults, totalPossiblePoints });
+                console.log(previousWeekPositions);
+                const usersObject = buildUsersObject(users, matches, bets, true, { extraBets, extraBetsResults, totalPossiblePoints })
+                    .map((userObject) => {
+                        const previousPosition = previousWeekPositions.find((userPosition) => userPosition.id === userObject.id);
+                        return {
+                            ...userObject,
+                            previousPosition: previousPosition ? previousPosition.position : null
+                        }
+                    });
+
                 const dataObject = {
                     season: normalizedSeason,
                     totalPossiblePoints,

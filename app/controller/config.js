@@ -37,7 +37,8 @@ exports.default = async function (req, res) {
 
         const seasonInfo = allResults[0].value[0];
         const weekInfo = allResults[1].value[0];
-        const currentWeek = weekInfo.week;
+        const currentWeek = weekInfo ? weekInfo.week : 1;
+        req.session.currentWeek = currentWeek;
 
         if (req.session.user) {
             User.updateLastOnlineTime(req.session.user.id);
