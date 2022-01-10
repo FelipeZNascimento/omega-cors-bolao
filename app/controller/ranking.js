@@ -451,7 +451,7 @@ exports.listRankingHistory = async function (req, res) {
 
             for (let i = 0; i < maxWeek; i++) {
                 const weekObject = {
-                    num: i + 1,
+                    week: i + 1,
                     accumulated: allResultsCumulative[i].value,
                     weekly: allResultsWeekly[i].value
                 }

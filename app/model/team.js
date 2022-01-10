@@ -14,6 +14,10 @@ var Team = function (team) {
 };
 
 Team.mergeWithEspn = (teams, espnFetch) => {
+    if (!espnFetch) {
+        return teams;
+    }
+
     const espnTeams = espnFetch.sports[0].leagues[0].teams;
 
     if (!espnTeams) {

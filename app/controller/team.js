@@ -13,12 +13,16 @@ exports.fetchFromESPNApi = async function () {
             .filter(p => p.status === 'rejected')
             .map(p => p.reason);
 
-        if (errors.length > 0) {
+        let teamsFromESPN = null;
+        if (errors.length === 1 && allResults[0].status === 'rejected') {
+            teamsFromESPN = null;
+        } else if (errors.length > 0) {
             const errorMessage = errors.map((error) => error);
             throw new Error(errorMessage);
+        } else {
+            teamsFromESPN = JSON.parse(allResults[0].value);
         }
 
-        const teamsFromESPN = JSON.parse(allResults[0].value);
         const teamsRaw = allResults[1].value;
         const teams = Team.mergeWithEspn(teamsRaw, teamsFromESPN);
         const teamsByConferenceAndDivision = Team.byConferenceAndDivision(teams);
