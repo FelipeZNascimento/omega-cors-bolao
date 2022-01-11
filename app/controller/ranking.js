@@ -291,7 +291,14 @@ exports.listBySeason = async function (req, res) {
 
         await Bets.byMatchIds(matches.map((match) => match.id))
             .then((bets) => {
-                const pastMatches = matches.filter((match) => match.week < currentWeek);
+                const hasCurrentWeekStarted = matches
+                    .filter((match) => match.week === currentWeek)
+                    .find((match) => match.timestamp <= Date.now() / 1000);
+
+                const pastMatches = matches.filter((match) => match.week < hasCurrentWeekStarted !== undefined
+                    ? currentWeek
+                    : currentWeek - 1
+                );
                 const pastPossiblePoints = pastMatches
                     .reduce((acumulator, match) =>
                         acumulator + MaxPointsPerBet.Season(parseInt(normalizedSeason), parseInt(match.week))
@@ -310,7 +317,6 @@ exports.listBySeason = async function (req, res) {
                         acumulator + MaxPointsPerBet.Season(parseInt(normalizedSeason), parseInt(match.week))
                         , 0);
 
-                console.log(previousWeekPositions);
                 const usersObject = buildUsersObject(users, matches, bets, true, { extraBets, extraBetsResults, totalPossiblePoints })
                     .map((userObject) => {
                         const previousPosition = previousWeekPositions.find((userPosition) => userPosition.id === userObject.id);
