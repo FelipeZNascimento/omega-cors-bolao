@@ -367,9 +367,9 @@ exports.updateWeeklyRecords = async function (req, res) {
 
             const matches = allResults[0].value;
             const records = allResults[1].value;
-
-            if (records.length === 0
-                && matches.every((match) => match.status === MATCH_STATUS.FINAL || match.status === MATCH_STATUS.FINAL_OVERTIME)) {
+            if ((records.length === 1 && records[0].pointsAvailable === null) ||
+                (records.length === 0
+                    && matches.every((match) => match.status === MATCH_STATUS.FINAL || match.status === MATCH_STATUS.FINAL_OVERTIME))) {
                 const rankingQuery = [
                     Bets.byMatchIds(matches.map((match) => match.id)),
                     User.getBySeason(currentSeason)
