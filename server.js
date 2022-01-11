@@ -40,8 +40,10 @@ const sessionSettings = {
 let serverPort = 8081;
 const environment = app.get('env');
 // const environment = 'production';
+// sql.js also needs to be changed
 if (environment === 'production') {
     serverPort = 0;
+    // serverPort = 63768;
     app.set('trust proxy', 1) // trust first proxy
     sessionSettings.cookie.secure = true; // serve secure cookies
     sessionSettings.cookie.sameSite = 'none'; // serve secure cookies

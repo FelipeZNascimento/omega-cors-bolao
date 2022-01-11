@@ -262,7 +262,6 @@ exports.listBySeason = async function (req, res) {
     const normalizedSeason = season > 2000
         ? SEASON_MAPPING[season]
         : season;
-    const currentWeek = req.session.currentWeek;
 
     try {
         const allQueries = [
@@ -291,14 +290,17 @@ exports.listBySeason = async function (req, res) {
 
         await Bets.byMatchIds(matches.map((match) => match.id))
             .then((bets) => {
+                const currentWeek = req.session.currentWeek;
+
                 const hasCurrentWeekStarted = matches
                     .filter((match) => match.week === currentWeek)
                     .find((match) => match.timestamp <= Date.now() / 1000);
 
-                const pastMatches = matches.filter((match) => match.week < hasCurrentWeekStarted !== undefined
+                const comparedWeek = hasCurrentWeekStarted !== undefined
                     ? currentWeek
-                    : currentWeek - 1
-                );
+                    : currentWeek - 1;
+
+                const pastMatches = matches.filter((match) => match.week < comparedWeek);
                 const pastPossiblePoints = pastMatches
                     .reduce((acumulator, match) =>
                         acumulator + MaxPointsPerBet.Season(parseInt(normalizedSeason), parseInt(match.week))
@@ -329,7 +331,8 @@ exports.listBySeason = async function (req, res) {
                 const dataObject = {
                     season: normalizedSeason,
                     totalPossiblePoints,
-                    users: usersObject
+                    users: usersObject,
+                    comparedWeek
                 };
 
                 res.send(dataObject);
