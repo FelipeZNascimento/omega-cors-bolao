@@ -21,7 +21,7 @@ const seasonMaxPoints = (season, week) => {
         } else if (week === 21) {
             return 40;
         } else if (week === 22) {
-            return 40;
+            return 80;
         }
     }
 }
