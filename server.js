@@ -53,6 +53,7 @@ app.set('trust proxy', 1) // trust first proxy
 
 if (environment === 'production') {
     serverPort = 0;
+    server = https.createServer(app);
 } else {
     serverPort = 63768;
     server = https.createServer({
