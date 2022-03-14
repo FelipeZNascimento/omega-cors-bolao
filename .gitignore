@@ -2,3 +2,9 @@
 node_modules/
 
 .env
+
+cert.pem
+
+cert/key.pem
+
+key.pem

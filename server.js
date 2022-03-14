@@ -5,12 +5,18 @@ const express = require('express'),
     MySQLStore = require('express-mysql-session')(session),
     SQLConfig = require('./app/const/sqlConfig'),
     dotenv = require('dotenv'),
-    http = require('http');
+    https = require('https'),
+    fs = require('fs');
+
+// How to create localhost https node server
+// https://nodejs.org/en/knowledge/HTTP/servers/how-to-create-a-HTTPS-server/
 
 dotenv.config();
 
 const allowedOrigins = [
+    'https://localhost',
     'http://localhost',
+    'https://localhost:3000',
     'http://localhost:3000',
     /\.omegafox\.me$/
 ];
@@ -37,24 +43,27 @@ const sessionSettings = {
     rolling: true,
 };
 
-let serverPort = 8081;
+let server;
+let serverPort;
 const environment = app.get('env');
-// const environment = 'production';
-// sql.js also needs to be changed
+
+sessionSettings.cookie.secure = true;
+sessionSettings.cookie.sameSite = 'none';
+app.set('trust proxy', 1) // trust first proxy
+
 if (environment === 'production') {
     serverPort = 0;
-    // serverPort = 63768;
-    app.set('trust proxy', 1) // trust first proxy
-    sessionSettings.cookie.secure = true; // serve secure cookies
-    sessionSettings.cookie.sameSite = 'none'; // serve secure cookies
 } else {
-    sessionSettings.cookie.secure = false;
+    serverPort = 63768;
+    server = https.createServer({
+        key: fs.readFileSync('key.pem'),
+        cert: fs.readFileSync('cert.pem')
+    }, app);
 }
 
 sessionSettings.store = new MySQLStore(SQLConfig.returnConfig(environment));
 
 app.use(session(sessionSettings));
-let server = http.createServer(app);
 
 server.listen(serverPort, function () {
     console.log(`CORS-enabled web server listening on port ${server.address().port} at ${environment} environment`);

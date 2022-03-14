@@ -287,6 +287,7 @@ exports.listBySeason = async function (req, res) {
         const extraBets = allResults[2].value;
         const extraBetsResults = allResults[3].value.length > 0 ? JSON.parse(allResults[3].value[0].json) : null;
         const weekInfo = allResults[4].value[0];
+        const weekInfoWeek = weekInfo ? weekInfo.week : 1;
 
         await Bets.byMatchIds(matches.map((match) => match.id))
             .then((bets) => {
@@ -314,7 +315,7 @@ exports.listBySeason = async function (req, res) {
                     });
 
                 const totalPossiblePoints = matches
-                    .filter((match) => match.week <= weekInfo.week)
+                    .filter((match) => match.week <= weekInfoWeek)
                     .reduce((acumulator, match) =>
                         acumulator + MaxPointsPerBet.Season(parseInt(normalizedSeason), parseInt(match.week))
                         , 0);

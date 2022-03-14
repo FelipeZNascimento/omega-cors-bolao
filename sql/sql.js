@@ -4,7 +4,6 @@ const SQLConfig = require('../app/const/sqlConfig');
 
 const app = express();
 const environment = app.get('env');
-// const environment = 'production';
 const connection = mysql.createConnection(SQLConfig.returnConfig(environment));
 
 connection.connect(function (err) {
