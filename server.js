@@ -54,8 +54,8 @@ app.set('trust proxy', 1) // trust first proxy
 if (environment === 'production') {
     serverPort = 0;
     server = https.createServer({
-        key: fs.readFileSync('certs/certificate.crt'),
-        cert: fs.readFileSync('certs/certificate.key')
+        key: fs.readFileSync('certs/certificate.key'),
+        cert: fs.readFileSync('certs/certificate.crt')
     }, app);
 } else {
     serverPort = 63768;
