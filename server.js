@@ -5,6 +5,7 @@ const express = require('express'),
     MySQLStore = require('express-mysql-session')(session),
     SQLConfig = require('./app/const/sqlConfig'),
     dotenv = require('dotenv'),
+    http = require('http'),
     https = require('https'),
     fs = require('fs');
 
@@ -53,10 +54,7 @@ app.set('trust proxy', 1) // trust first proxy
 
 if (environment === 'production') {
     serverPort = 0;
-    server = https.createServer({
-        key: fs.readFileSync('certs/certificate.key'),
-        cert: fs.readFileSync('certs/certificate.crt')
-    }, app);
+    server = http.createServer(app);
 } else {
     serverPort = 63768;
     server = https.createServer({
