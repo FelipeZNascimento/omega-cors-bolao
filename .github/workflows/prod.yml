@@ -24,12 +24,6 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: 🔨 Build
-        run: CI='' npm run build
-
       - name: 📂 Sync files to prod folder
         uses: SamKirkland/FTP-Deploy-Action@4.3.0
         with:
