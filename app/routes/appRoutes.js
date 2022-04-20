@@ -64,4 +64,8 @@ module.exports = function (app) {
         .get(rankingController.updateWeeklyRecords)
     app.route('/bolaonfl/records/')
         .post(rankingController.listRecords)
+
+    app.use(function (req, res) {
+        res.sendStatus(404);
+    });
 };
