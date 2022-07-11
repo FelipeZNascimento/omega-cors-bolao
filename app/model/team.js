@@ -26,7 +26,7 @@ Team.mergeWithEspn = (teams, espnFetch) => {
 
     const updatedTeams = teams.map((team) => {
         selectedTeam = espnTeams.filter((espnTeam) => espnTeam.team.abbreviation === team.code)[0].team;
-        team.winLosses = selectedTeam.record.items[0].summary;
+        team.winLosses = selectedTeam.record ? selectedTeam.record.items[0].summary : '0-0';
 
         return team;
     });
