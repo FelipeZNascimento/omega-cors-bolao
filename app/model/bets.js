@@ -1,24 +1,24 @@
-const { promisify } = require('util');
-var sql = require('../../sql/sql');
+const { promisify } = require("util");
+var sql = require("../../sql/sql");
 
 // node native promisify
 const asyncQuery = promisify(sql.query).bind(sql);
-const MATCH_STATUS = require('../const/matchStatus');
+const MATCH_STATUS = require("../const/matchStatus");
 
 var Bets = function (bet) {
-    this.bet = bet.bet;
-    this.userId = bet.userId;
-    this.matchId = bet.matchId;
-    this.betValue = bet.betValue;
+  this.bet = bet.bet;
+  this.userId = bet.userId;
+  this.matchId = bet.matchId;
+  this.betValue = bet.betValue;
 };
 
 Bets.byMatchIds = async function (matchIds) {
-    if (matchIds.length === 0) {
-        return null;
-    }
+  if (matchIds.length === 0) {
+    return null;
+  }
 
-    const rows = asyncQuery(
-        `SELECT bets.id, bets.id_bet as betValue, bets.id_user as userId, bets.id_match as matchId,
+  const rows = asyncQuery(
+    `SELECT bets.id, bets.id_bet as betValue, bets.id_user as userId, bets.id_match as matchId,
         users.name as userName, users_icon.icon as userIcon, users_icon.color as userColor
         FROM bets
         INNER JOIN matches 		ON matches.id = bets.id_match
@@ -27,14 +27,14 @@ Bets.byMatchIds = async function (matchIds) {
         WHERE matches.timestamp <= UNIX_TIMESTAMP()
         AND bets.id_match IN (?)
         GROUP BY bets.id_match, bets.id_user`,
-        [matchIds]
-    );
-    return rows;
+    [matchIds]
+  );
+  return rows;
 };
 
 Bets.byUserId = async function (userId, seasonId) {
-    const rows = asyncQuery(
-        `SELECT SQL_NO_CACHE matches.id as matchId, matches.timestamp, matches.week, matches.id_season as season, matches.status, matches.possession,
+  const rows = asyncQuery(
+    `SELECT SQL_NO_CACHE matches.id as matchId, matches.timestamp, matches.week, matches.id_season as season, matches.status, matches.possession,
         matches.away_points as awayScore, matches.home_points as homeScore, matches.overUnder, matches.homeTeamOdds,
         teamHome.name AS teamHome, teamHome.alias AS teamHomeAlias, teamHome.id AS idTeamHome, 
         teamHome.code AS teamHomeCode, teamHome.background AS teamHomeBackground, teamHome.foreground AS teamHomeForeground, 
@@ -54,24 +54,24 @@ Bets.byUserId = async function (userId, seasonId) {
         AND matches.status NOT IN (?)
         GROUP BY bets.id_match, userId
         ORDER BY matches.week ASC`,
-        [
-            userId,
-            userId,
-            userId,
-            seasonId,
-            [MATCH_STATUS.NOT_STARTED, MATCH_STATUS.CANCELLED, MATCH_STATUS.DELAYED]
-        ]
-    );
+    [
+      userId,
+      userId,
+      userId,
+      seasonId,
+      [MATCH_STATUS.NOT_STARTED, MATCH_STATUS.CANCELLED, MATCH_STATUS.DELAYED],
+    ]
+  );
 
-    return rows;
+  return rows;
 };
 
 Bets.byUserIdAndMatchIds = function (userId, matchIds, result) {
-    if (matchIds.length === 0) {
-        return result(null, []);
-    } else {
-        sql.query(
-            `SELECT bets.id, bets.id_bet as betValue, bets.id_user as userId, bets.id_match as matchId,
+  if (matchIds.length === 0) {
+    return result(null, []);
+  } else {
+    sql.query(
+      `SELECT bets.id, bets.id_bet as betValue, bets.id_user as userId, bets.id_match as matchId,
         users.name as userName, users_icon.icon as userIcon, users_icon.color as userColor
         FROM bets
         INNER JOIN matches 		ON matches.id = bets.id_match
@@ -80,76 +80,76 @@ Bets.byUserIdAndMatchIds = function (userId, matchIds, result) {
         WHERE bets.id_user = ?
         AND bets.id_match IN (?)
         GROUP BY bets.id_match, bets.id_user`,
-            [userId, matchIds],
-            function (err, res) {
-                if (err) {
-                    console.log("error: ", err);
-                    result(err, null);
-                }
-                else {
-                    result(null, res);
-                }
-            });
-    }
+      [userId, matchIds],
+      function (err, res) {
+        if (err) {
+          console.log("error: ", err);
+          result(err, null);
+        } else {
+          result(null, res);
+        }
+      }
+    );
+  }
 };
 
 Bets.extraBetsResults = async function (season) {
-    const rows = asyncQuery(
-        `SELECT SQL_NO_CACHE id_season as idSeason, json
+  const rows = asyncQuery(
+    `SELECT SQL_NO_CACHE id_season as idSeason, json
         FROM extra_bets_results_new
         WHERE id_season = ?`,
-        [season]
-    );
+    [season]
+  );
 
-    return rows;
+  return rows;
 };
 
 Bets.extraBets = async function (season) {
-    const rows = asyncQuery(
-        `SELECT SQL_NO_CACHE extra_bets_new.id_user as idUser, extra_bets_new.id_season as idSeason, extra_bets_new.json,
+  const rows = asyncQuery(
+    `SELECT SQL_NO_CACHE extra_bets_new.id_user as idUser, extra_bets_new.id_season as idSeason, extra_bets_new.json,
         users.name as userName, users_icon.icon as userIcon, users_icon.color as userColor
         FROM extra_bets_new
         INNER JOIN users 		ON users.id = extra_bets_new.id_user
         LEFT JOIN users_icon    ON users.id = users_icon.id_user
         WHERE id_season = ?`,
-        [season]
-    );
+    [season]
+  );
 
-    return rows;
-}
+  return rows;
+};
 
 Bets.userExtraBets = async function (season, userId) {
-    const rows = asyncQuery(
-        `SELECT SQL_NO_CACHE extra_bets_new.id_user as idUser, extra_bets_new.id_season as idSeason, extra_bets_new.json,
+  const rows = asyncQuery(
+    `SELECT SQL_NO_CACHE extra_bets_new.id_user as idUser, extra_bets_new.id_season as idSeason, extra_bets_new.json,
         users.name as userName, users_icon.icon as userIcon, users_icon.color as userColor
         FROM extra_bets_new
         INNER JOIN users 		ON users.id = extra_bets_new.id_user
         LEFT JOIN users_icon    ON users.id = users_icon.id_user
         WHERE extra_bets_new.id_season = ? AND extra_bets_new.id_user = ?`,
-        [season, userId]
-    );
+    [season, userId]
+  );
 
-    return rows;
-}
+  return rows;
+};
 
 Bets.updateExtras = async function (userId, season, newExtras) {
-    const rows = asyncQuery(
-        `INSERT INTO extra_bets_new (id_user, id_season, json) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE json = ?`,
-        [userId, season, newExtras, newExtras],
-    );
+  const rows = asyncQuery(
+    `INSERT INTO extra_bets_new (id_user, id_season, json) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE json = ?`,
+    [userId, season, newExtras, newExtras]
+  );
 
-    return rows;
-}
+  return rows;
+};
 
 Bets.updateRegular = async function (matchId, userId, betValue) {
-    const rows = asyncQuery(
-        `INSERT INTO bets (id_match, id_user, id_bet) 
+  const rows = asyncQuery(
+    `INSERT INTO bets (id_match, id_user, id_bet) 
         VALUES (?, ?, ?)
         ON DUPLICATE KEY UPDATE id_bet = ?`,
-        [matchId, userId, betValue, betValue],
-    );
+    [matchId, userId, betValue, betValue]
+  );
 
-    return rows;
-}
+  return rows;
+};
 
 module.exports = Bets;
