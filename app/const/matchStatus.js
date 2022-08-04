@@ -1,4 +1,4 @@
-export const MATCH_STATUS = {
+const MATCH_STATUS = {
   // 0-19
   NOT_STARTED: 0,
   FINAL: 1,
@@ -8,7 +8,7 @@ export const MATCH_STATUS = {
   INTERRUPTED: 5,
 };
 
-export const FOOTBALL_MATCH_STATUS = {
+const FOOTBALL_MATCH_STATUS = {
   ...MATCH_STATUS,
   // 20-39
   FIRST_HALF: 20,
@@ -24,7 +24,7 @@ export const FOOTBALL_MATCH_STATUS = {
   FINAL_PENALTIES: 30,
 };
 
-export const AMERICAN_FOOTBALL_MATCH_STATUS = {
+const AMERICAN_FOOTBALL_MATCH_STATUS = {
   ...MATCH_STATUS,
   // 40-59
   FIRST_QUARTER: 40,
@@ -39,7 +39,7 @@ export const AMERICAN_FOOTBALL_MATCH_STATUS = {
   FINAL_OVERTIME: 49,
 };
 
-export const LABELS = {
+const LABELS = {
   [MATCH_STATUS.NOT_STARTED]: "",
   [MATCH_STATUS.FINAL]: "Fim",
   [MATCH_STATUS.DELAYED]: "Adiado",
@@ -69,7 +69,7 @@ export const LABELS = {
   [AMERICAN_FOOTBALL_MATCH_STATUS.FINAL_OVERTIME]: "Fim OT",
 };
 
-export const STOPPED_GAME = [
+const STOPPED_GAME = [
   MATCH_STATUS.NOT_STARTED,
   MATCH_STATUS.FINAL,
   MATCH_STATUS.DELAYED,
