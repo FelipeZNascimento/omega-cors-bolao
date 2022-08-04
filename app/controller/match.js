@@ -176,7 +176,6 @@ exports.updateBySeason = async function (req, res) {
           matchData.homeTeamCode == null ||
           matchData.week == null
         ) {
-          console.log(matchData);
           return res
             .status(400)
             .send({ error: true, message: "Missing parameters." });
@@ -197,8 +196,6 @@ exports.updateBySeason = async function (req, res) {
           matchData.homeTeamCode == null ||
           matchData.week == null
         ) {
-          console.log(matchData);
-
           return res
             .status(400)
             .send({ error: true, message: "Missing parameters." });
