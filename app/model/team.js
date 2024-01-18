@@ -24,12 +24,14 @@ Team.mergeWithEspn = (teams, espnFetch) => {
     return teams;
   }
 
+  const activeEspnTeams = espnTeams.filter((espnTeam) => espnTeam.team.isActive);
   const updatedTeams = teams.map((team) => {
-    selectedTeam = espnTeams.filter(
+    selectedTeam = activeEspnTeams.filter(
       (espnTeam) => espnTeam.team.abbreviation === team.code
-    )[0].team;
-    team.winLosses = selectedTeam.record
-      ? selectedTeam.record.items[0].summary
+    )[0];
+
+    team.winLosses = selectedTeam.team.record
+      ? selectedTeam.team.record.items[0].summary
       : "0-0";
 
     return team;
@@ -76,8 +78,11 @@ Team.getAll = async function () {
 
 Team.fetchESPNApi = async function () {
   return asyncHttps(
-    "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams?limit=32"
+    "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams"
   );
+
+  // In the future maybe switch for the below scoreboard
+  // https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard
 };
 
 module.exports = Team;
