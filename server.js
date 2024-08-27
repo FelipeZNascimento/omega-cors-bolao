@@ -83,7 +83,7 @@ app.use(function responseLogger(req, res, next) {
       res.statusCode,
       responseTime
     );
-    if (environment === "production") {
+    if (environment === "production" && req.method === 'POST') {
         logInstance.setLog();
     }
     console.log(logInstance);
