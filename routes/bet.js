@@ -6,7 +6,7 @@ router.get("/", function (req, res) {
   res.send("What you wanna do with the bets huh?");
 });
 
-router.get("/:season/:week", function (req, res) {
+router.get("/list/:season/:week", function (req, res) {
   betsController.listBetsBySeasonAndWeek(req, res);
 });
 
