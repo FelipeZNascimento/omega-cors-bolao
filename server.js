@@ -70,30 +70,24 @@ if (environment === "production") {
 } else {
   serverPort = 63768;
   server = http.createServer(app);
-  //   server = https.createServer(
-  //     {
-  //       key: fs.readFileSync("certs/key.pem"),
-  //       cert: fs.readFileSync("certs/cert.pem"),
-  //     },
-  //     app
-  //   );
 }
 
 sessionSettings.store = new MySQLStore(SQLConfig.returnConfig(environment));
 app.use(session(sessionSettings));
-app.use("/user", userRouter);
-app.use("/bet", betRouter);
-app.use("/extrabet", extraBetRouter);
-app.use("/team", teamRouter);
-app.use("/match", matchRouter);
-app.use("/ranking", rankingRouter);
-app.use("/record", recordRouter);
-app.use("/", initializeRouter);
+app.use("/bolaonfl/user", userRouter);
+app.use("/bolaonfl/bet", betRouter);
+app.use("/bolaonfl/extrabet", extraBetRouter);
+app.use("/bolaonfl/team", teamRouter);
+app.use("/bolaonfl/match", matchRouter);
+app.use("/bolaonfl/ranking", rankingRouter);
+app.use("/bolaonfl/record", recordRouter);
+app.use("/bolaonfl", initializeRouter);
 
 // Catches 404
 app.use(function (req, res, next) {
   return res.status(400).send({
-    message: "Not found.",
+    message: "Not found",
+    request: req.url,
   });
 });
 
