@@ -84,7 +84,7 @@ app.use("/bolaonfl/record", recordRouter);
 app.use("/bolaonfl", initializeRouter);
 
 // Catches 404
-app.use(function (req, res, next) {
+app.use(function (req, res) {
   return res.status(400).send({
     message: "Not found",
     request: req.url,
