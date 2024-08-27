@@ -3,11 +3,21 @@ const express = require("express"),
   cors = require("cors"),
   session = require("express-session"),
   MySQLStore = require("express-mysql-session")(session),
-  SQLConfig = require("./app/const/sqlConfig"),
+  SQLConfig = require("./const/sqlConfig"),
   dotenv = require("dotenv"),
   http = require("http"),
   https = require("https"),
   fs = require("fs");
+
+// Routers
+const userRouter = require("./routes/user");
+const betRouter = require("./routes/bet");
+const extraBetRouter = require("./routes/extra_bet");
+const teamRouter = require("./routes/team");
+const matchRouter = require("./routes/match");
+const rankingRouter = require("./routes/ranking");
+const recordRouter = require("./routes/record");
+const initializeRouter = require("./routes/initialize");
 
 // How to create localhost https node server
 // https://nodejs.org/en/knowledge/HTTP/servers/how-to-create-a-HTTPS-server/
@@ -59,18 +69,33 @@ if (environment === "production") {
   server = http.createServer(app);
 } else {
   serverPort = 63768;
-  server = https.createServer(
-    {
-      key: fs.readFileSync("certs/key.pem"),
-      cert: fs.readFileSync("certs/cert.pem"),
-    },
-    app
-  );
+  server = http.createServer(app);
+  //   server = https.createServer(
+  //     {
+  //       key: fs.readFileSync("certs/key.pem"),
+  //       cert: fs.readFileSync("certs/cert.pem"),
+  //     },
+  //     app
+  //   );
 }
 
 sessionSettings.store = new MySQLStore(SQLConfig.returnConfig(environment));
-
 app.use(session(sessionSettings));
+app.use("/user", userRouter);
+app.use("/bet", betRouter);
+app.use("/extrabet", extraBetRouter);
+app.use("/team", teamRouter);
+app.use("/match", matchRouter);
+app.use("/ranking", rankingRouter);
+app.use("/record", recordRouter);
+app.use("/", initializeRouter);
+
+// Catches 404
+app.use(function (req, res, next) {
+  return res.status(400).send({
+    message: "Not found.",
+  });
+});
 
 server.listen(serverPort, function () {
   console.log(
@@ -79,8 +104,5 @@ server.listen(serverPort, function () {
     } at ${environment} environment`
   );
 });
-
-var routes = require("./app/routes/appRoutes"); //importing route
-routes(app); //register the routes
 
 module.exports = app;
