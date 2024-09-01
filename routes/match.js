@@ -10,7 +10,7 @@ router.get("/list/:season/:week/", function (req, res) {
   matchController.list(req, res);
 });
 
-router.post("update/:season/:key", function (req, res) {
+router.post("/update/:season/:key/", function (req, res) {
   matchController.updateBySeason(req, res);
 });
 

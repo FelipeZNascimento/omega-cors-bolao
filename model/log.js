@@ -5,8 +5,17 @@ var sql = require("../sql/sql");
 const asyncQuery = promisify(sql.query).bind(sql);
 
 module.exports = class Log {
-  constructor(originalUrl, sessionUser, responseStatusCode, responseTime) {
+  constructor(
+    originalUrl,
+    body,
+    ip,
+    sessionUser,
+    responseStatusCode,
+    responseTime
+  ) {
     this.endpoint = originalUrl;
+    this.body = body;
+    this.ip = ip;
     this.sessionUser = sessionUser;
     this.responseStatusCode = responseStatusCode;
     this.responseTime = responseTime;
@@ -14,11 +23,13 @@ module.exports = class Log {
 
   setLog() {
     const rows = asyncQuery(
-      `INSERT INTO logging (endpoint, session_user, response_status_code, response_time) 
-                VALUES (?, ?, ?, ?)`,
+      `INSERT INTO logging (endpoint, ip, session_user, body, response_status_code, response_time) 
+                VALUES (?, ?, ?, ?, ?, ?)`,
       [
         this.endpoint,
-        this.sessionUser,
+        this.ip,
+        JSON.stringify(this.sessionUser),
+        JSON.stringify(this.body),
         this.responseStatusCode,
         this.responseTime,
       ]
