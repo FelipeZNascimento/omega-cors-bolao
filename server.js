@@ -45,14 +45,15 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 const sessionSecret = process.env.SESSION_SECRET;
+const environment = app.get("env");
 
 const sevenDays = 7 * 24 * 60 * 60 * 1000;
 const sessionSettings = {
   secret: sessionSecret,
   cookie: {
     maxAge: sevenDays,
-    secure: true,
-    sameSite: "none",
+    secure: environment === "production",
+    sameSite: environment === "production" ? "none" : "strict",
   },
   resave: true,
   saveUninitialized: false,
@@ -61,10 +62,20 @@ const sessionSettings = {
 };
 
 app.set("trust proxy", 1); // trust first proxy
-
-const environment = app.get("env");
-const serverPort = environment === "production" ? 0 : 63768;
-const server = http.createServer(app);
+let serverPort = 0;
+let server;
+if (environment === "production") {
+  server = http.createServer(app);
+} else {
+  serverPort = 63768;
+  server = https.createServer(
+    {
+      key: fs.readFileSync("./cert/localhost.key"),
+      cert: fs.readFileSync("./cert/localhost.crt"),
+    },
+    app
+  );
+}
 
 sessionSettings.store = new MySQLStore(SQLConfig.returnConfig(environment));
 app.use(session(sessionSettings));
@@ -76,15 +87,21 @@ app.use(function responseLogger(req, res, next) {
   res.send = function (body) {
     const responseTime = new Date() - timestamp_start;
     const sessionUser = req.session.user || "not logged";
-
     const logInstance = new Log(
       req.originalUrl,
+      req.body,
+      req.ip,
       sessionUser,
       res.statusCode,
       responseTime
     );
-    if (environment === "production" && req.method === 'POST') {
-        logInstance.setLog();
+
+    if (
+      environment === "production" &&
+      req.method === "POST" &&
+      !req.originalUrl.includes("match/update") // This call was flooding the logs
+    ) {
+      logInstance.setLog();
     }
     console.log(logInstance);
     return originalSendFunc(body);

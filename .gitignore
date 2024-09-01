@@ -4,3 +4,6 @@ node_modules/
 .env
 
 certs/
+cert/localhost.crt
+cert/localhost.csr
+cert/localhost.key
